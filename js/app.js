@@ -143,10 +143,10 @@ const App = {
     const expForm = document.getElementById('expense-form');
     if (expForm) expForm.addEventListener('submit', (e) => Expenses.handleSaveExpense(e));
 
-    // أحداث حقول البزنس الحية
+    // أحداث حقول البزنس الحية وتكاليف الشحن والتكاليف الإضافية
     const liveFields = [
       'biz-currency', 'biz-cost-lyd', 'biz-cost-usd', 'biz-exchange-rate',
-      'biz-shipping-cost', 'biz-customs-cost', 'biz-additional-cost', 'biz-total-units'
+      'biz-shipping-cost', 'biz-total-units'
     ];
     liveFields.forEach(id => {
       const el = document.getElementById(id);
@@ -159,6 +159,32 @@ const App = {
     const bizCurrency = document.getElementById('biz-currency');
     if (bizCurrency) {
       bizCurrency.addEventListener('change', () => Businesses.toggleCurrencyInputs());
+    }
+
+    // تبديل وحسابات الشحن
+    const shipType = document.getElementById('biz-shipping-type');
+    if (shipType) shipType.addEventListener('change', () => Businesses.toggleShippingInputs());
+
+    const shipCurr = document.getElementById('biz-shipping-currency');
+    if (shipCurr) shipCurr.addEventListener('change', () => Businesses.toggleShippingInputs());
+
+    const shipCalcFields = [
+      'biz-shipping-sea-volume', 'biz-shipping-sea-rate',
+      'biz-shipping-air-weight', 'biz-shipping-air-rate',
+      'biz-shipping-exchange-rate'
+    ];
+    shipCalcFields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => Businesses.calculateShipping());
+        el.addEventListener('change', () => Businesses.calculateShipping());
+      }
+    });
+
+    // زر إضافة تكلفة إضافية
+    const addExtraBtn = document.getElementById('btn-add-additional-cost');
+    if (addExtraBtn) {
+      addExtraBtn.addEventListener('click', () => Businesses.addAdditionalCostRow());
     }
 
     const enableAds = document.getElementById('biz-enable-ads');
@@ -242,14 +268,27 @@ const App = {
       });
     }
 
-    // استجابة للشاشات الصغيرة (Sidebar Toggle)
+    // استجابة للشاشات الصغيرة (Sidebar Toggle & Backdrop)
     const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
     const sidebar = document.getElementById('app-sidebar');
-    if (sidebarToggle && sidebar) {
-      sidebarToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('show');
-      });
-    }
+
+    const openSidebar = () => {
+      if (sidebar) sidebar.classList.add('show');
+      if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+      document.body.classList.add('sidebar-open');
+    };
+
+    const closeSidebar = () => {
+      if (sidebar) sidebar.classList.remove('show');
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+      document.body.classList.remove('sidebar-open');
+    };
+
+    if (sidebarToggle) sidebarToggle.addEventListener('click', openSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
   },
 
   /**
@@ -299,8 +338,11 @@ const App = {
 
     // إغلاق الشريط الجانبي في الهاتف بعد الضغط
     const sidebar = document.getElementById('app-sidebar');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
     if (sidebar && window.innerWidth < 992) {
       sidebar.classList.remove('show');
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+      document.body.classList.remove('sidebar-open');
     }
 
     this.refreshCurrentView();
@@ -394,15 +436,22 @@ const App = {
       currency: 'USD',
       costInUSD: 1200,
       exchangeRate: 5.2,
-      shippingCost: 450,
-      customsCost: 200,
+      shippingType: 'sea',
+      shippingCurrency: 'USD',
+      shippingSeaVolume: 0.5,
+      shippingSeaRate: 150,
+      shippingExchangeRate: 5.2,
+      shippingCost: 390,
+      customsCost: 0,
+      additionalCosts: [{ name: 'تغليف وتطريز فاخر', amount: 100 }],
       additionalCost: 100,
-      totalCostLYD: (1200 * 5.2) + 450 + 200 + 100, // 6990
-      unitCost: ((1200 * 5.2) + 450 + 200 + 100) / 50, // 139.8
+      totalCostLYD: (1200 * 5.2) + 390 + 100, // 6730
+      unitCost: ((1200 * 5.2) + 390 + 100) / 50, // 134.6
       enableAds: true,
+      adCost: 150,
       adBudget: 150,
-      adCurrency: 'USD',
-      adSpent: 120,
+      adCurrency: 'LYD',
+      adSpent: 0,
       status: 'active'
     });
 
@@ -416,15 +465,22 @@ const App = {
       productImage: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&auto=format&fit=crop&q=60',
       currency: 'LYD',
       costInLYD: 2500,
+      shippingType: 'air',
+      shippingCurrency: 'LYD',
+      shippingAirWeight: 10,
+      shippingAirRate: 15,
+      shippingExchangeRate: 1,
       shippingCost: 150,
       customsCost: 0,
+      additionalCosts: [{ name: 'ملصقات العلامة التجارية', amount: 50 }],
       additionalCost: 50,
       totalCostLYD: 2700,
       unitCost: 27,
       enableAds: true,
+      adCost: 200,
       adBudget: 200,
       adCurrency: 'LYD',
-      adSpent: 180,
+      adSpent: 0,
       status: 'active'
     });
 

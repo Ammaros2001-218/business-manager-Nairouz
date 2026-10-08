@@ -80,16 +80,24 @@
   <!-- ========================================== -->
   <div id="app-wrapper" style="display: none;">
 
+    <!-- خلفية تعتيم للشاشات الصغيرة عند فتح القائمة الجانبية -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
     <!-- القائمة الجانبية الأنيقة (Sidebar) -->
     <aside id="app-sidebar">
-      <div class="sidebar-brand d-flex align-items-center gap-2">
-        <div class="rounded-circle bg-pink-soft p-2 text-pink d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-          <i class="bi bi-gem fs-5"></i>
+      <div class="sidebar-brand d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-circle bg-pink-soft p-2 text-pink d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-gem fs-5"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0 text-pink">Business Manager</h5>
+            <small class="text-muted" style="font-size: 0.75rem;">لوحة الإدارة الشخصية</small>
+          </div>
         </div>
-        <div>
-          <h5 class="fw-bold mb-0 text-pink">Business Manager</h5>
-          <small class="text-muted" style="font-size: 0.75rem;">لوحة الإدارة الشخصية</small>
-        </div>
+        <button type="button" class="btn btn-sm btn-light rounded-circle d-lg-none p-2 border-0" id="sidebar-close-btn" aria-label="إغلاق القائمة">
+          <i class="bi bi-x-lg text-muted"></i>
+        </button>
       </div>
 
       <nav class="sidebar-menu">
@@ -415,46 +423,130 @@
                   </div>
                 </div>
 
-                <!-- 2. التكاليف وحساب تكلفة القطعة -->
+                <!-- 2. التكاليف ورأس المال وحساب تكلفة القطعة -->
                 <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-calculator text-purple me-2"></i>2. التكاليف ورأس المال</h5>
-                <div class="row g-3 mb-4">
-                  <div class="col-md-3">
-                    <label class="form-label fw-bold text-sm">عملة الشراء الأساسية</label>
-                    <select id="biz-currency" class="form-select rounded-3">
-                      <option value="LYD">دينار ليبي (LYD)</option>
-                      <option value="USD">دولار أمريكي (USD)</option>
-                    </select>
-                  </div>
+                
+                <!-- أ. تكلفة شراء البضاعة (دينار فقط أو دولار ودينار) -->
+                <div class="card border-0 bg-light rounded-4 p-3 mb-3">
+                  <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bag-check text-pink me-2"></i>تكلفة الشراء:</h6>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-sm">طريقة وعملة الشراء</label>
+                      <select id="biz-currency" class="form-select rounded-3">
+                        <option value="LYD">بالدينار فقط</option>
+                        <option value="USD">دولار ودينار</option>
+                      </select>
+                    </div>
 
-                  <div class="col-md-5" id="biz-lyd-group">
-                    <label class="form-label fw-bold text-sm">تكلفة شراء البضاعة (بالدينار الليبي)</label>
-                    <input type="number" id="biz-cost-lyd" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
-                  </div>
+                    <div class="col-md-8" id="biz-lyd-group">
+                      <label class="form-label fw-bold text-sm">تكلفة شراء البضاعة (بالدينار الليبي د.ل)</label>
+                      <input type="number" id="biz-cost-lyd" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
+                    </div>
 
-                  <div class="col-md-9" id="biz-usd-group" style="display: none;">
-                    <div class="row g-2">
-                      <div class="col-md-6">
-                        <label class="form-label fw-bold text-sm">التكلفة الإجمالية (بالدولار $)</label>
-                        <input type="number" id="biz-cost-usd" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
-                      </div>
-                      <div class="col-md-6">
-                        <label class="form-label fw-bold text-sm">سعر صرف الدولار (مقابل الدينار)</label>
-                        <input type="number" id="biz-exchange-rate" step="0.01" min="0.1" class="form-control rounded-3" placeholder="مثال: 5.20" value="5.20">
+                    <div class="col-md-8" id="biz-usd-group" style="display: none;">
+                      <div class="row g-2">
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold text-sm">التكلفة بالدولار ($)</label>
+                          <input type="number" id="biz-cost-usd" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold text-sm">سعر صرف الدولار (مقابل الدينار)</label>
+                          <input type="number" id="biz-exchange-rate" step="0.01" min="0.1" class="form-control rounded-3" placeholder="مثال: 5.20" value="5.20">
+                        </div>
+                        <div class="col-12">
+                          <small class="text-pink fw-semibold" id="biz-cost-usd-hint">المعادل بالدينار: 0.00 د.ل</small>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div class="col-md-4">
-                    <label class="form-label fw-bold text-sm">تكاليف الشحن والنقل (د.ل)</label>
-                    <input type="number" id="biz-shipping-cost" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                <!-- ب. تكاليف الشحن (بحري / جوي - دولار / دينار) -->
+                <div class="card border-0 bg-light rounded-4 p-3 mb-3">
+                  <h6 class="fw-bold text-dark mb-3"><i class="bi bi-truck text-purple me-2"></i>تكاليف الشحن:</h6>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-sm">نوع الشحن</label>
+                      <select id="biz-shipping-type" class="form-select rounded-3">
+                        <option value="sea">شحن بحري 🚢</option>
+                        <option value="air">شحن جوي ✈️</option>
+                      </select>
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-sm">عملة حساب الشحن</label>
+                      <select id="biz-shipping-currency" class="form-select rounded-3">
+                        <option value="LYD">بالدينار فقط</option>
+                        <option value="USD">دولار ودينار</option>
+                      </select>
+                    </div>
+
+                    <div class="col-md-4" id="biz-shipping-rate-group" style="display: none;">
+                      <label class="form-label fw-bold text-sm">سعر صرف الدولار للشحن</label>
+                      <input type="number" id="biz-shipping-exchange-rate" step="0.01" min="0.1" class="form-control rounded-3" placeholder="مثال: 5.20" value="5.20">
+                    </div>
+
+                    <!-- حقول الشحن البحري: مساحة الصندوق وسعره -->
+                    <div class="col-12" id="biz-shipping-sea-group">
+                      <div class="row g-2">
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold text-sm">مساحة الصندوق (الحجم بالمتر المكعب CBM)</label>
+                          <input type="number" id="biz-shipping-sea-volume" step="any" min="0" class="form-control rounded-3" placeholder="مثال: 0.5 م³">
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold text-sm" id="biz-shipping-sea-rate-label">سعر المتر المكعب (د.ل)</label>
+                          <input type="number" id="biz-shipping-sea-rate" step="any" min="0" class="form-control rounded-3" placeholder="مثال: 250">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- حقول الشحن الجوي: الوزن وسعره -->
+                    <div class="col-12" id="biz-shipping-air-group" style="display: none;">
+                      <div class="row g-2">
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold text-sm">وزن الشحنة (بالكيلوغرام kg)</label>
+                          <input type="number" id="biz-shipping-air-weight" step="any" min="0" class="form-control rounded-3" placeholder="مثال: 15 كجم">
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold text-sm" id="biz-shipping-air-rate-label">سعر الكيلوغرام (د.ل)</label>
+                          <input type="number" id="biz-shipping-air-rate" step="any" min="0" class="form-control rounded-3" placeholder="مثال: 15">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- إجمالي تكلفة الشحن النهائية بالدينار -->
+                    <div class="col-12">
+                      <div class="p-3 bg-white rounded-3 border d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                          <label class="form-label fw-bold text-sm mb-0">إجمالي تكلفة الشحن (بالدينار د.ل):</label>
+                          <small class="text-muted d-block" id="biz-shipping-calc-hint">يحسب تلقائياً من الأبعاد والوزن أو يمكن إدخاله يدوياً</small>
+                        </div>
+                        <div style="width: 200px;">
+                          <input type="number" id="biz-shipping-cost" step="any" min="0" class="form-control rounded-3 fw-bold text-pink text-end" placeholder="0.00" value="0">
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="col-md-4">
-                    <label class="form-label fw-bold text-sm">الجمارك والرسوم (د.ل)</label>
-                    <input type="number" id="biz-customs-cost" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                </div>
+
+                <!-- ج. تكاليف إضافية (ديناميكية مع اسم التكلفة وسعرها ويمكن إضافتها أكثر من مرة) -->
+                <div class="card border-0 bg-light rounded-4 p-3 mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-plus-square text-pink me-2"></i>تكاليف إضافية (اختياري):</h6>
+                    <button type="button" class="btn btn-sm btn-outline-pink rounded-pill px-3" id="btn-add-additional-cost">
+                      <i class="bi bi-plus-circle me-1"></i> إضافة تكلفة إضافية
+                    </button>
                   </div>
-                  <div class="col-md-4">
-                    <label class="form-label fw-bold text-sm">تكاليف إضافية أخرى (د.ل)</label>
-                    <input type="number" id="biz-additional-cost" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                  <p class="text-muted text-xs mb-3">يمكنك تحديد اسم كل تكلفة إضافية وسعرها وإضافتها أكثر من مرة (مثل: تغليف، عمالة، نقل محلي، إلخ).</p>
+                  
+                  <div id="biz-additional-costs-container" class="d-flex flex-column gap-2 mb-3">
+                    <!-- صفوف التكاليف الإضافية تضاف ديناميكياً هنا -->
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <span class="text-muted text-sm">مجموع التكاليف الإضافية:</span>
+                    <strong class="text-pink fs-6" id="biz-additional-total-display">0.00 د.ل</strong>
+                    <input type="hidden" id="biz-additional-cost" value="0">
                   </div>
                 </div>
 
@@ -467,20 +559,10 @@
 
                 <div id="biz-ads-container" class="p-3 bg-pink-subtle rounded-3 mb-4" style="display: none;">
                   <div class="row g-3">
-                    <div class="col-md-4">
-                      <label class="form-label fw-bold text-sm">ميزانية الإعلان المخططة</label>
-                      <input type="number" id="biz-ad-budget" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label fw-bold text-sm">عملة ميزانية الإعلان</label>
-                      <select id="biz-ad-currency" class="form-select rounded-3">
-                        <option value="USD">دولار أمريكي (USD)</option>
-                        <option value="LYD">دينار ليبي (LYD)</option>
-                      </select>
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label fw-bold text-sm">المبلغ المصروف فعلياً حتى الآن</label>
-                      <input type="number" id="biz-ad-spent" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold text-sm">تكلفة الإعلان بالدينار (د.ل)</label>
+                      <input type="number" id="biz-ad-cost" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
+                      <small class="text-muted">المبلغ المخصص للإعلانات الممولة لهذا البزنس بالدينار الليبي</small>
                     </div>
                   </div>
                 </div>
@@ -494,8 +576,8 @@
                       <strong id="live-summary-base-cost">0.00 د.ل</strong>
                     </div>
                     <div class="col-6 col-md-4">
-                      <span class="text-muted d-block text-xs">الشحن والجمارك:</span>
-                      <strong><span id="live-summary-shipping">0.00 د.ل</span> + <span id="live-summary-customs">0.00 د.ل</span></strong>
+                      <span class="text-muted d-block text-xs">الشحن والمصاريف الإضافية:</span>
+                      <strong><span id="live-summary-shipping">0.00 د.ل</span> + <span id="live-summary-additional">0.00 د.ل</span></strong>
                     </div>
                     <div class="col-6 col-md-4">
                       <span class="text-muted d-block text-xs">إجمالي تكلفة المخزون (رأس المال):</span>
@@ -882,9 +964,9 @@
           <!-- قسم الإعلانات الممولة إن كانت مفعلة -->
           <div id="biz-details-ads-section" class="card border-0 bg-white shadow-sm rounded-4 p-3 mb-4" style="display: none;">
             <h6 class="fw-bold text-dark mb-2"><i class="bi bi-badge-ad text-pink me-2"></i>الإعلانات الممولة:</h6>
-            <div class="d-flex gap-4 text-sm">
-              <div>الميزانية المحددة: <strong id="biz-details-ads-budget"></strong></div>
-              <div>المصروف فعلياً: <strong class="text-pink" id="biz-details-ads-spent"></strong></div>
+            <div class="d-flex flex-wrap gap-4 text-sm">
+              <div>تكلفة الإعلان: <strong class="text-pink" id="biz-details-ads-budget">0.00 د.ل</strong></div>
+              <div>المصروف المسجل في المصروفات: <strong class="text-dark" id="biz-details-ads-spent">0.00 د.ل</strong></div>
             </div>
           </div>
 

@@ -373,3 +373,178 @@ body {
 .progress-bar.bg-pink {
   background: linear-gradient(90deg, #FF80B5 0%, #E85D9E 100%);
 }
+
+/* ==========================================================================
+   تحسينات التجاوب مع الهواتف والأجهزة اللوحية (Responsive Mobile Enhancements)
+   ========================================================================== */
+
+/* تعتيم خلفية القائمة للشاشات الصغيرة */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(20, 10, 25, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1035;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* تنسيقات الشاشات المتوسطة والأجهزة اللوحية (Tablets & Mobile <= 991.98px) */
+@media (max-width: 991.98px) {
+  #app-sidebar {
+    width: 290px;
+    max-width: 85vw;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .topbar {
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+    border-radius: var(--border-radius-lg);
+  }
+
+  .topbar h4 {
+    font-size: 1.15rem;
+  }
+
+  .topbar small {
+    display: none;
+  }
+
+  .topbar .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem !important;
+  }
+}
+
+/* تنسيقات الهواتف الذكية (Mobile Phones <= 767.98px) */
+@media (max-width: 767.98px) {
+  #main-content {
+    padding: 0.85rem 0.75rem !important;
+  }
+
+  .stat-card {
+    padding: 1.1rem !important;
+    border-radius: var(--border-radius-lg);
+  }
+
+  .stat-value {
+    font-size: 1.35rem !important;
+  }
+
+  .stat-label {
+    font-size: 0.82rem;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.25rem;
+  }
+
+  /* تحسين كروت البزنس والمشاريع في الهاتف */
+  .business-card .card-img-top,
+  .archive-card .card-img-top {
+    height: 160px !important;
+  }
+
+  .business-card .card-body,
+  .archive-card .card-body {
+    padding: 1rem !important;
+  }
+
+  /* تحسين النوافذ المنبثقة للهواتف */
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .modal-content {
+    border-radius: var(--border-radius-lg);
+  }
+
+  .modal-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .modal-header h5 {
+    font-size: 1.05rem;
+  }
+
+  .modal-body {
+    padding: 1rem !important;
+    max-height: 75vh;
+  }
+
+  .modal-footer {
+    padding: 0.85rem 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .modal-footer .d-flex {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.35rem !important;
+  }
+
+  .modal-footer button {
+    flex: 1 1 auto;
+    font-size: 0.8rem;
+  }
+
+  /* تحسين الجداول مع إمكانية التمرير الأفقي الناعم */
+  .table-responsive {
+    border-radius: var(--border-radius-lg);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table td, .table th {
+    padding: 0.65rem 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  /* تحسين صفحة تسجيل الدخول في الشاشات الصغيرة */
+  .login-glass-card {
+    padding: 1.75rem 1.25rem;
+    border-radius: var(--border-radius-lg);
+  }
+
+  .brand-icon-circle {
+    width: 60px;
+    height: 60px;
+    font-size: 1.6rem;
+  }
+
+  /* تحسين المخططات البيانية */
+  .card canvas {
+    max-height: 250px !important;
+  }
+}
+
+/* شاشات الهواتف شديدة الصغر (Small Phones <= 480px) */
+@media (max-width: 480px) {
+  .topbar .btn span,
+  .topbar .btn {
+    white-space: nowrap;
+  }
+
+  .nav-pills .nav-link {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+

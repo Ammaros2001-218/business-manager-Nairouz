@@ -154,7 +154,8 @@ const Businesses = {
     const adsContainer = document.getElementById('biz-details-ads-section');
     if (biz.enableAds) {
       adsContainer.style.display = 'block';
-      document.getElementById('biz-details-ads-budget').textContent = `${biz.adBudget || 0} ${biz.adCurrency || 'USD'}`;
+      const adCostVal = biz.adCost !== undefined ? biz.adCost : (biz.adBudget || 0);
+      document.getElementById('biz-details-ads-budget').textContent = Calculations.formatCurrency(adCostVal);
       document.getElementById('biz-details-ads-spent').textContent = Calculations.formatCurrency(summary.adExpensesTotal);
     } else {
       adsContainer.style.display = 'none';
@@ -257,6 +258,10 @@ const Businesses = {
     form.reset();
     document.getElementById('form-edit-business-id').value = businessId || '';
 
+    // تفريغ قائمة التكاليف الإضافية
+    const extraContainer = document.getElementById('biz-additional-costs-container');
+    if (extraContainer) extraContainer.innerHTML = '';
+
     if (businessId) {
       document.getElementById('business-form-title').textContent = 'تعديل بيانات البزنس';
       const biz = await Database.getBusinessById(businessId);
@@ -268,30 +273,56 @@ const Businesses = {
         document.getElementById('biz-total-units').value = biz.totalUnits || '';
         document.getElementById('biz-description').value = biz.description || '';
 
-        // التكاليف
+        // 1. تكلفة الشراء
         document.getElementById('biz-currency').value = biz.currency || 'LYD';
         document.getElementById('biz-cost-lyd').value = biz.costInLYD || '';
         document.getElementById('biz-cost-usd').value = biz.costInUSD || '';
         document.getElementById('biz-exchange-rate').value = biz.exchangeRate || '';
-        document.getElementById('biz-shipping-cost').value = biz.shippingCost || '';
-        document.getElementById('biz-customs-cost').value = biz.customsCost || '';
-        document.getElementById('biz-additional-cost').value = biz.additionalCost || '';
 
-        // الإعلانات
+        // 2. تكاليف الشحن
+        document.getElementById('biz-shipping-type').value = biz.shippingType || 'sea';
+        document.getElementById('biz-shipping-currency').value = biz.shippingCurrency || 'LYD';
+        document.getElementById('biz-shipping-sea-volume').value = biz.shippingSeaVolume || '';
+        document.getElementById('biz-shipping-sea-rate').value = biz.shippingSeaRate || '';
+        document.getElementById('biz-shipping-air-weight').value = biz.shippingAirWeight || '';
+        document.getElementById('biz-shipping-air-rate').value = biz.shippingAirRate || '';
+        document.getElementById('biz-shipping-exchange-rate').value = biz.shippingExchangeRate || (biz.exchangeRate || '5.20');
+        document.getElementById('biz-shipping-cost').value = biz.shippingCost !== undefined ? biz.shippingCost : 0;
+
+        // 3. التكاليف الإضافية
+        if (biz.additionalCosts && Array.isArray(biz.additionalCosts) && biz.additionalCosts.length > 0) {
+          biz.additionalCosts.forEach(item => {
+            this.addAdditionalCostRow(item.name || '', item.amount !== undefined ? item.amount : (item.cost || 0));
+          });
+        } else if (biz.additionalCost && Number(biz.additionalCost) > 0) {
+          this.addAdditionalCostRow('تكاليف إضافية', biz.additionalCost);
+        } else {
+          this.updateAdditionalCosts();
+        }
+
+        // 4. الإعلانات الممولة
         const adsCheck = document.getElementById('biz-enable-ads');
         adsCheck.checked = !!biz.enableAds;
-        document.getElementById('biz-ad-budget').value = biz.adBudget || '';
-        document.getElementById('biz-ad-currency').value = biz.adCurrency || 'USD';
-        document.getElementById('biz-ad-spent').value = biz.adSpent || '';
+        const adCostVal = biz.adCost !== undefined ? biz.adCost : (biz.adBudget || '');
+        document.getElementById('biz-ad-cost').value = adCostVal || '';
 
         this.toggleCurrencyInputs();
+        this.toggleShippingInputs();
         this.toggleAdsFields();
         this.updateLiveCostSummary();
       }
     } else {
       document.getElementById('business-form-title').textContent = 'إضافة بزنس جديد';
       document.getElementById('biz-purchase-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('biz-currency').value = 'LYD';
+      document.getElementById('biz-shipping-type').value = 'sea';
+      document.getElementById('biz-shipping-currency').value = 'LYD';
+      document.getElementById('biz-shipping-exchange-rate').value = '5.20';
+      document.getElementById('biz-shipping-cost').value = '0';
+      
+      this.updateAdditionalCosts();
       this.toggleCurrencyInputs();
+      this.toggleShippingInputs();
       this.toggleAdsFields();
       this.updateLiveCostSummary();
     }
@@ -300,7 +331,7 @@ const Businesses = {
   },
 
   /**
-   * تبديل حقول العملة وحساب التكاليف فورياً
+   * تبديل حقول عملة وتكلفة الشراء
    */
   toggleCurrencyInputs() {
     const currency = document.getElementById('biz-currency').value;
@@ -313,11 +344,177 @@ const Businesses = {
       usdGroup.style.display = 'none';
       lydGroup.style.display = 'block';
     }
+    this.updateLiveCostSummary();
+  },
+
+  /**
+   * تبديل حقول الشحن (بحري / جوي) وعملة الشحن (دينار فقط / دولار ودينار)
+   */
+  toggleShippingInputs() {
+    const type = document.getElementById('biz-shipping-type').value;
+    const currency = document.getElementById('biz-shipping-currency').value;
+    
+    const seaGroup = document.getElementById('biz-shipping-sea-group');
+    const airGroup = document.getElementById('biz-shipping-air-group');
+    const rateGroup = document.getElementById('biz-shipping-rate-group');
+    
+    if (type === 'air') {
+      seaGroup.style.display = 'none';
+      airGroup.style.display = 'block';
+    } else {
+      seaGroup.style.display = 'block';
+      airGroup.style.display = 'none';
+    }
+
+    const currSymbol = currency === 'USD' ? '($)' : '(د.ل)';
+    const seaLabel = document.getElementById('biz-shipping-sea-rate-label');
+    if (seaLabel) seaLabel.textContent = `سعر المتر المكعب ${currSymbol}`;
+    const airLabel = document.getElementById('biz-shipping-air-rate-label');
+    if (airLabel) airLabel.textContent = `سعر الكيلوغرام ${currSymbol}`;
+
+    if (currency === 'USD') {
+      rateGroup.style.display = 'block';
+      // مزامنة تلقائية مع سعر صرف الشراء إن وُجد
+      const mainRate = document.getElementById('biz-exchange-rate');
+      const shipRate = document.getElementById('biz-shipping-exchange-rate');
+      if (mainRate && shipRate && mainRate.value && (!shipRate.value || shipRate.value === '5.20')) {
+        shipRate.value = mainRate.value;
+      }
+    } else {
+      rateGroup.style.display = 'none';
+    }
+
+    this.calculateShipping();
+  },
+
+  /**
+   * حساب تكاليف الشحن تلقائياً من الأبعاد أو الوزن وسعر الصرف
+   */
+  calculateShipping() {
+    const type = document.getElementById('biz-shipping-type').value;
+    const currency = document.getElementById('biz-shipping-currency').value;
+    const shipRateEl = document.getElementById('biz-shipping-exchange-rate');
+    const exchangeRate = parseFloat(shipRateEl ? shipRateEl.value : 1) || 1;
+    const hintEl = document.getElementById('biz-shipping-calc-hint');
+
+    let baseCost = 0;
+    let calcText = '';
+
+    if (type === 'sea') {
+      const vol = parseFloat(document.getElementById('biz-shipping-sea-volume').value) || 0;
+      const rate = parseFloat(document.getElementById('biz-shipping-sea-rate').value) || 0;
+      baseCost = vol * rate;
+      if (vol > 0 && rate > 0) {
+        calcText = `${vol} م³ × ${rate} ${currency === 'USD' ? '$' : 'د.ل'}`;
+      }
+    } else {
+      const weight = parseFloat(document.getElementById('biz-shipping-air-weight').value) || 0;
+      const rate = parseFloat(document.getElementById('biz-shipping-air-rate').value) || 0;
+      baseCost = weight * rate;
+      if (weight > 0 && rate > 0) {
+        calcText = `${weight} كجم × ${rate} ${currency === 'USD' ? '$' : 'د.ل'}`;
+      }
+    }
+
+    let totalLYD = baseCost;
+    if (currency === 'USD') {
+      totalLYD = baseCost * exchangeRate;
+      if (calcText) {
+        calcText += ` × ${exchangeRate} (صرف) = ${totalLYD.toFixed(2)} د.ل`;
+      }
+    }
+
+    if (calcText) {
+      if (hintEl) hintEl.textContent = `الحساب التلقائي: ${calcText}`;
+      const shipCostInp = document.getElementById('biz-shipping-cost');
+      if (shipCostInp && (baseCost > 0 || !shipCostInp.value || shipCostInp.value === '0')) {
+        shipCostInp.value = Number(totalLYD.toFixed(2));
+      }
+    } else if (hintEl) {
+      hintEl.textContent = 'يحسب تلقائياً من الأبعاد والوزن أو يمكن إدخاله يدوياً';
+    }
+
+    this.updateLiveCostSummary();
+  },
+
+  /**
+   * إضافة سطر تكلفة إضافية جديدة
+   */
+  addAdditionalCostRow(name = '', amount = '') {
+    const container = document.getElementById('biz-additional-costs-container');
+    if (!container) return;
+
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-2 p-2 bg-white rounded-3 border';
+    row.innerHTML = `
+      <div class="flex-grow-1">
+        <input type="text" class="form-control form-control-sm rounded-3 biz-extra-cost-name" placeholder="اسم التكلفة (مثال: عمالة، تغليف محلي)" value="${name || ''}">
+      </div>
+      <div style="width: 150px;">
+        <div class="input-group input-group-sm">
+          <input type="number" step="any" min="0" class="form-control rounded-3 biz-extra-cost-amount" placeholder="0.00" value="${amount !== '' ? amount : ''}">
+          <span class="input-group-text bg-light border-start-0 text-muted">د.ل</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-1" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;" title="حذف هذا البند">
+        <i class="bi bi-trash text-xs"></i>
+      </button>
+    `;
+
+    const removeBtn = row.querySelector('button');
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+      this.updateAdditionalCosts();
+    });
+
+    const amountInp = row.querySelector('.biz-extra-cost-amount');
+    amountInp.addEventListener('input', () => this.updateAdditionalCosts());
+
+    container.appendChild(row);
+    this.updateAdditionalCosts();
+  },
+
+  /**
+   * جمع وتحديث التكاليف الإضافية
+   */
+  updateAdditionalCosts() {
+    const amounts = document.querySelectorAll('.biz-extra-cost-amount');
+    let total = 0;
+    amounts.forEach(inp => {
+      total += parseFloat(inp.value) || 0;
+    });
+
+    const hiddenInp = document.getElementById('biz-additional-cost');
+    if (hiddenInp) hiddenInp.value = total;
+
+    const displayEl = document.getElementById('biz-additional-total-display');
+    if (displayEl) displayEl.textContent = Calculations.formatCurrency(total);
+
+    this.updateLiveCostSummary();
+  },
+
+  /**
+   * استخراج مصفوفة التكاليف الإضافية للحفظ
+   */
+  getAdditionalCostsList() {
+    const rows = document.querySelectorAll('#biz-additional-costs-container > div');
+    const list = [];
+    rows.forEach(r => {
+      const nameInp = r.querySelector('.biz-extra-cost-name');
+      const amtInp = r.querySelector('.biz-extra-cost-amount');
+      const name = nameInp ? nameInp.value.trim() : '';
+      const amount = amtInp ? parseFloat(amtInp.value) || 0 : 0;
+      if (name || amount > 0) {
+        list.push({ name: name || 'تكلفة إضافية', amount });
+      }
+    });
+    return list;
   },
 
   toggleAdsFields() {
     const enabled = document.getElementById('biz-enable-ads').checked;
-    document.getElementById('biz-ads-container').style.display = enabled ? 'block' : 'none';
+    const container = document.getElementById('biz-ads-container');
+    if (container) container.style.display = enabled ? 'block' : 'none';
   },
 
   /**
@@ -329,9 +526,16 @@ const Businesses = {
     const costInUSD = document.getElementById('biz-cost-usd').value;
     const exchangeRate = document.getElementById('biz-exchange-rate').value;
     const shippingCost = document.getElementById('biz-shipping-cost').value;
-    const customsCost = document.getElementById('biz-customs-cost').value;
-    const additionalCost = document.getElementById('biz-additional-cost').value;
+    const additionalCost = document.getElementById('biz-additional-cost') ? document.getElementById('biz-additional-cost').value : 0;
     const totalUnits = document.getElementById('biz-total-units').value;
+
+    // توضيح المعادل بالدينار في حقل الشراء بالدولار
+    const usdHint = document.getElementById('biz-cost-usd-hint');
+    if (usdHint && currency === 'USD') {
+      const uVal = parseFloat(costInUSD) || 0;
+      const rVal = parseFloat(exchangeRate) || 1;
+      usdHint.textContent = `المعادل بالدينار: ${(uVal * rVal).toFixed(2)} د.ل`;
+    }
 
     const costBreakdown = Calculations.calculateTotalInitialCost({
       currency,
@@ -339,18 +543,29 @@ const Businesses = {
       costInUSD,
       exchangeRate,
       shippingCost,
-      customsCost,
+      customsCost: 0,
       additionalCost
     });
 
     const unitCost = Calculations.calculateUnitCost(costBreakdown.totalCostLYD, totalUnits);
 
-    document.getElementById('live-summary-base-cost').textContent = Calculations.formatCurrency(costBreakdown.baseInventoryCostLYD);
-    document.getElementById('live-summary-shipping').textContent = Calculations.formatCurrency(costBreakdown.shippingCost);
-    document.getElementById('live-summary-customs').textContent = Calculations.formatCurrency(costBreakdown.customsCost);
-    document.getElementById('live-summary-total-cost').textContent = Calculations.formatCurrency(costBreakdown.totalCostLYD);
-    document.getElementById('live-summary-unit-cost').textContent = Calculations.formatCurrency(unitCost);
-    document.getElementById('live-summary-units').textContent = `${parseInt(totalUnits, 10) || 0} قطعة`;
+    const baseEl = document.getElementById('live-summary-base-cost');
+    if (baseEl) baseEl.textContent = Calculations.formatCurrency(costBreakdown.baseInventoryCostLYD);
+
+    const shipEl = document.getElementById('live-summary-shipping');
+    if (shipEl) shipEl.textContent = Calculations.formatCurrency(costBreakdown.shippingCost);
+
+    const addEl = document.getElementById('live-summary-additional');
+    if (addEl) addEl.textContent = Calculations.formatCurrency(costBreakdown.additionalCost);
+
+    const totalEl = document.getElementById('live-summary-total-cost');
+    if (totalEl) totalEl.textContent = Calculations.formatCurrency(costBreakdown.totalCostLYD);
+
+    const unitEl = document.getElementById('live-summary-unit-cost');
+    if (unitEl) unitEl.textContent = Calculations.formatCurrency(unitCost);
+
+    const unitsEl = document.getElementById('live-summary-units');
+    if (unitsEl) unitsEl.textContent = `${parseInt(totalUnits, 10) || 0} قطعة`;
 
     return { costBreakdown, unitCost };
   },
@@ -378,6 +593,10 @@ const Businesses = {
         if (old) imageUrl = old.productImage;
       }
 
+      const additionalCostsList = this.getAdditionalCostsList();
+      const totalAdditionalCost = parseFloat(document.getElementById('biz-additional-cost').value) || 0;
+      const adCostVal = parseFloat(document.getElementById('biz-ad-cost').value) || 0;
+
       const businessData = {
         name: document.getElementById('biz-name-input').value.trim(),
         productName: document.getElementById('biz-product-name').value.trim(),
@@ -387,23 +606,39 @@ const Businesses = {
         description: document.getElementById('biz-description').value.trim(),
         productImage: imageUrl,
 
-        // التكاليف
+        // 1. تكلفة الشراء
         currency: document.getElementById('biz-currency').value,
         costInLYD: parseFloat(document.getElementById('biz-cost-lyd').value) || 0,
         costInUSD: parseFloat(document.getElementById('biz-cost-usd').value) || 0,
         exchangeRate: parseFloat(document.getElementById('biz-exchange-rate').value) || 1,
-        shippingCost: parseFloat(document.getElementById('biz-shipping-cost').value) || 0,
-        customsCost: parseFloat(document.getElementById('biz-customs-cost').value) || 0,
-        additionalCost: parseFloat(document.getElementById('biz-additional-cost').value) || 0,
 
+        // 2. تكاليف الشحن
+        shippingType: document.getElementById('biz-shipping-type').value,
+        shippingCurrency: document.getElementById('biz-shipping-currency').value,
+        shippingSeaVolume: parseFloat(document.getElementById('biz-shipping-sea-volume').value) || 0,
+        shippingSeaRate: parseFloat(document.getElementById('biz-shipping-sea-rate').value) || 0,
+        shippingAirWeight: parseFloat(document.getElementById('biz-shipping-air-weight').value) || 0,
+        shippingAirRate: parseFloat(document.getElementById('biz-shipping-air-rate').value) || 0,
+        shippingExchangeRate: parseFloat(document.getElementById('biz-shipping-exchange-rate').value) || 1,
+        shippingCost: parseFloat(document.getElementById('biz-shipping-cost').value) || 0,
+
+        // 3. الجمارك (أزيلت بناء على الطلب)
+        customsCost: 0,
+
+        // 4. التكاليف الإضافية
+        additionalCosts: additionalCostsList,
+        additionalCost: totalAdditionalCost,
+
+        // رأس المال الإجمالي وتكلفة القطعة
         totalCostLYD: costBreakdown.totalCostLYD,
         unitCost: unitCost,
 
-        // الإعلانات
+        // 5. الإعلانات الممولة
         enableAds: document.getElementById('biz-enable-ads').checked,
-        adBudget: parseFloat(document.getElementById('biz-ad-budget').value) || 0,
-        adCurrency: document.getElementById('biz-ad-currency').value,
-        adSpent: parseFloat(document.getElementById('biz-ad-spent').value) || 0
+        adCost: adCostVal,
+        adBudget: adCostVal,
+        adCurrency: 'LYD',
+        adSpent: 0
       };
 
       await Database.saveBusiness(businessData, existingId || null);
