@@ -69,8 +69,20 @@ const App = {
           App.navigateTo('dashboard');
         } else {
           if (errEl) {
-            errEl.textContent = result.error;
-            errEl.style.display = 'block';
+            const errText = document.getElementById('login-error-text');
+            if (errText) {
+              errText.textContent = result.error;
+            } else {
+              errEl.textContent = result.error;
+            }
+            errEl.style.removeProperty('display');
+            errEl.style.display = 'flex';
+            
+            // إخفاء تلقائي للرسالة بعد 6 ثوانٍ
+            clearTimeout(window._loginErrTimer);
+            window._loginErrTimer = setTimeout(() => {
+              errEl.style.setProperty('display', 'none', 'important');
+            }, 6000);
           }
         }
       });
@@ -92,18 +104,22 @@ const App = {
       });
     }
 
-    // استعادة كلمة المرور
+    // استعادة كلمة المرور عبر واجهة الموقع المنبثقة بدلاً من alert()
     const forgotPassBtn = document.getElementById('forgot-password-link');
     if (forgotPassBtn) {
       forgotPassBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         const email = document.getElementById('login-email').value.trim();
         if (!email) {
-          alert('يرجى كتابة بريدك الإلكتروني أولاً في حقل البريد');
+          App.showToast('يرجى كتابة بريدك الإلكتروني في الحقل أولاً لإرسال رابط الاستعادة', 'error');
           return;
         }
         const res = await Auth.resetPassword(email);
-        alert(res.message || res.error);
+        if (res.success) {
+          App.showToast(res.message, 'success');
+        } else {
+          App.showToast(res.error, 'error');
+        }
       });
     }
 

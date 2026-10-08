@@ -1,7 +1,6 @@
 /**
  * auth.js
  * إدارة جلسة المستخدم وتسجيل الدخول والخروج باستخدام Firebase Authentication
- * مع وضع تجريبي مرن ومساعد للمالك الشخصي
  */
 
 const Auth = {
@@ -12,11 +11,8 @@ const Auth = {
   init(onAuthStateChangeCallback) {
     this._authCallback = onAuthStateChangeCallback;
     const auth = FirebaseApp.getAuth();
-    const config = FirebaseApp.getConfig();
-    const isConfigured = config.apiKey && !config.apiKey.includes('DummyKey');
     
-    // إذا كان Firebase مهيأ بمفاتيح حقيقية نراقب حالة Firebase Auth
-    if (auth && isConfigured) {
+    if (auth) {
       auth.onAuthStateChanged((user) => {
         if (user) {
           this.currentUser = user;
@@ -32,78 +28,55 @@ const Auth = {
         }
       });
     } else {
-      // فحص الجلسة المحلية الفورية
-      const localSession = localStorage.getItem('bm_session_active') === 'true';
-      const localUser = localStorage.getItem('bm_local_user');
-      if (localSession && localUser) {
-        try {
-          this.currentUser = JSON.parse(localUser);
-          this.isLoggedIn = true;
-          if (this._authCallback) this._authCallback(this.currentUser);
-        } catch (e) {
-          this.currentUser = null;
-          this.isLoggedIn = false;
-          if (this._authCallback) this._authCallback(null);
-        }
-      } else {
-        this.currentUser = null;
-        this.isLoggedIn = false;
-        if (this._authCallback) this._authCallback(null);
-      }
+      console.warn('Firebase Auth is not ready during init.');
+      this.currentUser = null;
+      this.isLoggedIn = false;
+      if (this._authCallback) this._authCallback(null);
     }
   },
 
   /**
-   * تسجيل الدخول
+   * تسجيل الدخول عبر Firebase Authentication
    */
   async login(email, password) {
     const auth = FirebaseApp.getAuth();
-    const config = FirebaseApp.getConfig();
-    const isConfigured = config.apiKey && !config.apiKey.includes('DummyKey');
 
-    if (auth && isConfigured) {
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        this.currentUser = userCredential.user;
-        this.isLoggedIn = true;
-        localStorage.setItem('bm_session_active', 'true');
-        localStorage.setItem('bm_local_user', JSON.stringify({
-          uid: this.currentUser.uid,
-          email: this.currentUser.email,
-          displayName: this.currentUser.displayName || 'صاحبة البزنس'
-        }));
-        if (this._authCallback) this._authCallback(this.currentUser);
-        return { success: true, user: this.currentUser };
-      } catch (error) {
-        console.error('Firebase Auth Login Error:', error);
-        return { success: false, error: this.getArabicAuthError(error.code, error.message) };
-      }
-    } else {
-      // وضع المالك الشخصي الافتراضي بدون خادم
-      // يسمح للمالك بالدخول والعمل الفوري وحفظ البيانات محلياً حتى يقوم بربط مفاتيح مشروعه
-      const ownerEmail = (localStorage.getItem('bm_owner_email') || 'admin@business.com').trim().toLowerCase();
-      const ownerPass = (localStorage.getItem('bm_owner_password') || 'admin123').trim();
-      const inputEmail = (email || '').trim().toLowerCase();
-      const inputPass = (password || '').trim();
+    if (!auth) {
+      return {
+        success: false,
+        error: 'تعذر الاتصال بـ Firebase Authentication. يرجى التأكد من اتصالك بالإنترنت.'
+      };
+    }
 
-      if (inputEmail === ownerEmail && inputPass === ownerPass) {
-        const mockUser = {
-          uid: 'owner_primary',
-          email: ownerEmail,
-          displayName: 'صاحبة البزنس'
-        };
-        this.currentUser = mockUser;
-        this.isLoggedIn = true;
-        localStorage.setItem('bm_session_active', 'true');
-        localStorage.setItem('bm_local_user', JSON.stringify(mockUser));
-        if (this._authCallback) this._authCallback(mockUser);
-        return { success: true, user: mockUser };
-      } else {
-        return {
-          success: false,
-          error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة. (بيانات الدخول التجريبية الافتراضية: admin@business.com / admin123)'
-        };
-      }
+    const cleanEmail = (email || '').trim();
+    const cleanPassword = (password || '').trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      return {
+        success: false,
+        error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
+      };
+    }
+
+    try {
+      const userCredential = await auth.signInWithEmailAndPassword(cleanEmail, cleanPassword);
+      this.currentUser = userCredential.user;
+      this.isLoggedIn = true;
+      localStorage.setItem('bm_session_active', 'true');
+      localStorage.setItem('bm_local_user', JSON.stringify({
+        uid: this.currentUser.uid,
+        email: this.currentUser.email,
+        displayName: this.currentUser.displayName || 'صاحبة البزنس'
+      }));
+      if (this._authCallback) this._authCallback(this.currentUser);
+      return { success: true, user: this.currentUser };
+    } catch (error) {
+      console.error('Firebase Auth Login Error:', error.code, error.message);
+      return {
+        success: false,
+        code: error.code,
+        error: this.getArabicAuthError(error.code)
+      };
     }
   },
 
@@ -127,49 +100,72 @@ const Auth = {
   },
 
   /**
-   * استعادة كلمة المرور
+   * استعادة كلمة المرور عبر رابط يرسل إلى البريد الإلكتروني
    */
   async resetPassword(email) {
     const auth = FirebaseApp.getAuth();
-    const config = FirebaseApp.getConfig();
-    const isConfigured = config.apiKey && !config.apiKey.includes('DummyKey');
+    const cleanEmail = (email || '').trim();
 
-    if (auth && isConfigured) {
-      try {
-        await auth.sendPasswordResetEmail(email);
-        return { success: true, message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.' };
-      } catch (error) {
-        return { success: false, error: this.getArabicAuthError(error.code) };
-      }
-    } else {
+    if (!auth) {
+      return {
+        success: false,
+        error: 'خدمة Firebase غير متصلة حالياً.'
+      };
+    }
+
+    if (!cleanEmail) {
+      return {
+        success: false,
+        error: 'يرجى كتابة البريد الإلكتروني أولاً في حقل البريد.'
+      };
+    }
+
+    try {
+      await auth.sendPasswordResetEmail(cleanEmail);
       return {
         success: true,
-        message: 'في الوضع التجريبي / المحلي: كلمة المرور الافتراضية هي "admin123". يمكنك تغييرها من قسم الإعدادات.'
+        message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني بنجاح.'
+      };
+    } catch (error) {
+      console.error('Reset Password Error:', error);
+      return {
+        success: false,
+        error: this.getArabicAuthError(error.code)
       };
     }
   },
 
-  getArabicAuthError(code, message) {
+  /**
+   * معالجة أخطاء Firebase وتوحيد رسائل الدخول لأسباب أمنية
+   */
+  getArabicAuthError(code) {
     switch (code) {
-      case 'auth/user-not-found':
-        return 'لا يوجد مستخدم مسجل بهذا البريد الإلكتروني في Firebase Authentication.';
-      case 'auth/wrong-password':
+      // توحيد رسائل أخطاء بيانات الاعتماد لأسباب أمنية
       case 'auth/invalid-credential':
-        return 'كلمة المرور غير صحيحة أو البيانات غير متطابقة.';
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+
       case 'auth/invalid-email':
-        return 'صيغة البريد الإلكتروني غير صالحة.';
+        return 'صيغة البريد الإلكتروني غير صالحة';
+
       case 'auth/user-disabled':
-        return 'تم تعطيل هذا الحساب من قِبل المشرف.';
+        return 'تم تعطيل هذا الحساب. يرجى مراجعة إدارة النظام';
+
       case 'auth/too-many-requests':
-        return 'تم حظر الدخول مؤقتاً لكثرة المحاولات، يرجى الانتظار والمحاولة لاحقاً.';
+        return 'تم حظر الدخول مؤقتاً لكثرة المحاولات، يرجى الانتظار والمحاولة لاحقاً';
+
       case 'auth/network-request-failed':
-        return 'فشل الاتصال بالإنترنت أو تعذر الوصول إلى خوادم Firebase.';
+        return 'فشل الاتصال بالإنترنت أو تعذر الوصول إلى خوادم Firebase';
+
       case 'auth/operation-not-allowed':
-        return 'طريقة الدخول عبر Email/Password غير مفعلة في Firebase Authentication Console.';
+        return 'طريقة الدخول عبر البريد الإلكتروني غير مفعلة في إعدادات Firebase Authentication';
+
       case 'auth/unauthorized-domain':
-        return 'نطاق الموقع (Domain) غير مضاف في قائمة Authorized Domains في Firebase Console.';
+        return 'نطاق الموقع الحالي غير مصرح به في إعدادات Firebase Console (Authorized Domains)';
+
       default:
-        return 'حدث خطأ أثناء تسجيل الدخول: ' + (code || '') + (message ? ` (${message})` : '');
+        return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
     }
   }
 };
