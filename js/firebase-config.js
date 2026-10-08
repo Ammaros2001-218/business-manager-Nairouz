@@ -6,14 +6,24 @@
 
 // إعدادات Firebase الافتراضية
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDummyKey_ReplaceWithYourActualFirebaseApiKey",
-  authDomain: "business-manager-f.firebaseapp.com",
-  databaseURL: "https://business-manager-f-default-rtdb.firebaseio.com",
-  projectId: "business-manager-f",
-  storageBucket: "business-manager-f.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef123456"
+  apiKey: "AIzaSyC3jVc_b0ZTbk2YmPxdCxT9YrijdIBFYZE",
+  authDomain: "business-manager-nairouz.firebaseapp.com",
+  databaseURL: "https://business-manager-nairouz-default-rtdb.firebaseio.com",
+  projectId: "business-manager-nairouz",
+  storageBucket: "business-manager-nairouz.firebasestorage.app",
+  messagingSenderId: "228073113161",
+  appId: "1:228073113161:web:02b262ad05de11a1542198"
 };
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
 
 function getFirebaseConfig() {
   const saved = localStorage.getItem('bm_firebase_config');
