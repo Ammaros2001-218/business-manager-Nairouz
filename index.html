@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Manager — إدارة البزنس والمبيعات والأرباح</title>
+  
+  <!-- خط تجوال العربي الأنيق Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 RTL CSS عبر CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+  
+  <!-- أيقونات Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- أنماط المشروع المخصصة -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- 1. شاشة تسجيل الدخول الشخصية (Auth Screen) -->
+  <!-- ========================================== -->
+  <div id="auth-wrapper">
+    <div class="login-glass-card text-center">
+      <div class="brand-icon-circle mb-3">
+        <i class="bi bi-gem"></i>
+      </div>
+      <h3 class="fw-bold mb-1" style="color: var(--primary-pink);">Business Manager</h3>
+      <p class="text-muted mb-4 small">بوابة الإدارة الذكية لمشاريعك ومبيعاتك وأرباحك</p>
+
+      <div id="login-error-msg" class="alert alert-danger py-2 small" style="display: none;"></div>
+
+      <form id="login-form">
+        <div class="mb-3 text-start">
+          <label class="form-label text-xs fw-bold text-muted">البريد الإلكتروني</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+            <input type="email" id="login-email" class="form-control border-start-0" placeholder="admin@business.com" required value="admin@business.com">
+          </div>
+        </div>
+
+        <div class="mb-3 text-start">
+          <label class="form-label text-xs fw-bold text-muted">كلمة المرور</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+            <input type="password" id="login-password" class="form-control border-start-0 border-end-0" placeholder="••••••••" required value="admin123">
+            <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" id="toggle-password-btn">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="form-check text-start">
+            <input class="form-check-input" type="checkbox" id="remember-me" checked>
+            <label class="form-check-label text-muted small" for="remember-me">تذكرني دائماً</label>
+          </div>
+          <a href="#" id="forgot-password-link" class="text-decoration-none small text-pink">استعادة كلمة المرور؟</a>
+        </div>
+
+        <button type="submit" id="login-btn" class="btn btn-pink w-100 py-2 rounded-pill mb-3">
+          <i class="bi bi-box-arrow-in-left me-1"></i> تسجيل الدخول
+        </button>
+
+        <div class="alert alert-info py-2 px-3 small rounded-3 border-0 bg-pink-subtle text-muted text-start">
+          <i class="bi bi-info-circle-fill text-pink me-1"></i>
+          مخصص للاستخدام الشخصي المستقل. كلمة المرور الافتراضية: <code>admin123</code>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. واجهة التطبيق الرئيسية (Main App)       -->
+  <!-- ========================================== -->
+  <div id="app-wrapper" style="display: none;">
+
+    <!-- القائمة الجانبية الأنيقة (Sidebar) -->
+    <aside id="app-sidebar">
+      <div class="sidebar-brand d-flex align-items-center gap-2">
+        <div class="rounded-circle bg-pink-soft p-2 text-pink d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+          <i class="bi bi-gem fs-5"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold mb-0 text-pink">Business Manager</h5>
+          <small class="text-muted" style="font-size: 0.75rem;">لوحة الإدارة الشخصية</small>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="sidebar-nav-link active" data-view="dashboard" onclick="App.navigateTo('dashboard')">
+          <i class="bi bi-grid-1x2"></i>
+          <span>لوحة التحكم</span>
+        </div>
+        <div class="sidebar-nav-link" data-view="active-businesses" onclick="App.navigateTo('active-businesses')">
+          <i class="bi bi-shop-window"></i>
+          <span>البزنسات النشطة</span>
+        </div>
+        <div class="sidebar-nav-link" data-view="add-business" onclick="Businesses.openEditForm(null)">
+          <i class="bi bi-plus-circle"></i>
+          <span>إضافة بزنس جديد</span>
+        </div>
+        <div class="sidebar-nav-link" data-view="archive" onclick="App.navigateTo('archive')">
+          <i class="bi bi-archive"></i>
+          <span>أرشيف البزنسات</span>
+        </div>
+        <div class="sidebar-nav-link" data-view="sales" onclick="App.navigateTo('sales')">
+          <i class="bi bi-cart-check"></i>
+          <span>جميع المبيعات</span>
+        </div>
+        <div class="sidebar-nav-link" data-view="expenses" onclick="App.navigateTo('expenses')">
+          <i class="bi bi-wallet2"></i>
+          <span>المصروفات</span>
+        </div>
+        <div class="sidebar-nav-link" data-view="reports" onclick="App.navigateTo('reports')">
+          <i class="bi bi-graph-up"></i>
+          <span>التقارير المالية</span>
+        </div>
+        <div class="sidebar-nav-link" data-view="settings" onclick="App.navigateTo('settings')">
+          <i class="bi bi-gear"></i>
+          <span>الإعدادات و Firebase</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2 overflow-hidden">
+            <div class="rounded-circle bg-purple-soft text-purple d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+              <i class="bi bi-person-fill"></i>
+            </div>
+            <div class="text-truncate">
+              <span class="d-block fw-bold small text-truncate" id="current-user-email">صاحبة البزنس</span>
+              <small class="text-muted" style="font-size: 0.7rem;">المالك المستقل</small>
+            </div>
+          </div>
+          <button class="btn btn-outline-danger btn-sm rounded-circle p-2 action-logout-btn" title="تسجيل الخروج">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- منطقة المحتوى الرئيسي (Main Content) -->
+    <main id="main-content">
+      
+      <!-- الشريط العلوي (Topbar) -->
+      <div class="topbar d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-light d-lg-none rounded-circle p-2" id="sidebar-toggle">
+            <i class="bi bi-list fs-5"></i>
+          </button>
+          <div>
+            <h4 class="fw-bold mb-0" id="topbar-page-title">لوحة التحكم والإحصائيات</h4>
+            <small class="text-muted">مرحباً بكِ في واجهة إدارتك المالية الذكية ✨</small>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-outline-pink btn-sm rounded-pill px-3" onclick="Sales.openAddSaleModal()">
+            <i class="bi bi-plus-lg me-1"></i> تسجيل بيع
+          </button>
+          <button class="btn btn-pink btn-sm rounded-pill px-3" onclick="Businesses.openEditForm(null)">
+            <i class="bi bi-shop me-1"></i> بزنس جديد
+          </button>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 1: لوحة التحكم (Dashboard View)         -->
+      <!-- ============================================== -->
+      <div id="dashboard-view" class="app-view fade-in">
+        
+        <!-- بطاقات الإحصائيات العلوية -->
+        <div class="row g-3 mb-4">
+          <!-- إجمالي رأس المال المستثمر -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-label">رأس المال المستثمر</div>
+                  <div class="stat-value text-dark" id="dash-stat-total-capital">0.00 د.ل</div>
+                  <small class="text-muted">شامل البضاعة والشحن والجمارك</small>
+                </div>
+                <div class="stat-icon bg-pink-soft text-pink">
+                  <i class="bi bi-cash-stack"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- إجمالي المبيعات -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-label">إجمالي المبيعات</div>
+                  <div class="stat-value text-pink" id="dash-stat-total-sales">0.00 د.ل</div>
+                  <small class="text-muted">صافي بعد الخصومات</small>
+                </div>
+                <div class="stat-icon bg-purple-soft text-purple">
+                  <i class="bi bi-bag-check"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- إجمالي المصروفات -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-label">إجمالي المصروفات</div>
+                  <div class="stat-value text-dark" id="dash-stat-total-expenses">0.00 د.ل</div>
+                  <small class="text-muted">إعلانات وتغليف وتشغيل</small>
+                </div>
+                <div class="stat-icon bg-gold-soft text-gold">
+                  <i class="bi bi-wallet2"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- صافي الربح / الخسارة -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card border-pink">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="stat-label">صافي الأرباح / الخسائر</div>
+                  <div class="stat-value text-profit" id="dash-stat-net-profit">0.00 د.ل</div>
+                  <span id="dash-stat-profit-badge" class="badge bg-success-soft text-success">صافي أرباح</span>
+                </div>
+                <div class="stat-icon bg-success-soft text-profit">
+                  <i class="bi bi-graph-up-arrow"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- بطاقات المخزون والبزنسات السريعة -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="stat-card">
+              <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-pink-soft text-pink"><i class="bi bi-boxes"></i></div>
+                <div>
+                  <div class="stat-label">قيمة المخزون المتبقي</div>
+                  <div class="stat-value fs-5" id="dash-stat-inventory-val">0.00 د.ل</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card">
+              <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-purple-soft text-purple"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                  <div class="stat-label">المبالغ المستحقة من العملاء</div>
+                  <div class="stat-value fs-5" id="dash-stat-receivable">0.00 د.ل</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card">
+              <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon bg-gold-soft text-gold"><i class="bi bi-shop"></i></div>
+                <div>
+                  <div class="stat-label">حالة البزنسات</div>
+                  <div class="d-flex gap-2 mt-1">
+                    <span class="badge bg-pink text-white"><span id="dash-stat-active-businesses">0</span> نشط</span>
+                    <span class="badge bg-secondary"><span id="dash-stat-closed-businesses">0</span> مؤرشف</span>
+                    <span class="text-muted small">إجمالي: <strong id="dash-stat-total-businesses">0</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- المخططات البيانية التفاعلية عبر Chart.js -->
+        <div class="row g-4 mb-4">
+          <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill text-pink me-2"></i>مقارنة المبيعات وصافي الأرباح حسب البزنس</h5>
+                <small class="text-muted">تحديث تلقائي لحظي</small>
+              </div>
+              <div style="height: 300px;">
+                <canvas id="chart-performance"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+              <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill text-purple me-2"></i>توزيع المصروفات</h5>
+              <div style="height: 280px;" class="d-flex align-items-center justify-content-center">
+                <canvas id="chart-expenses"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- مقارنة المبيعات بالمصروفات وآخر العمليات -->
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+              <h5 class="fw-bold mb-3"><i class="bi bi-graph-up text-pink me-2"></i>تطور المبيعات والمصروفات</h5>
+              <div style="height: 260px;">
+                <canvas id="chart-comparison"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-clock-history text-pink me-2"></i>أحدث عمليات البيع</h5>
+                <button class="btn btn-link text-pink text-decoration-none p-0 small fw-bold" onclick="App.navigateTo('sales')">عرض الكل</button>
+              </div>
+              <div id="dash-recent-sales">
+                <!-- يُملأ عبر JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 2: البزنسات النشطة (Active Businesses) -->
+      <!-- ============================================== -->
+      <div id="active-businesses-view" class="app-view fade-in" style="display: none;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+          <div class="row g-3 align-items-center">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="business-search-input" class="form-control border-start-0" placeholder="ابحثي عن اسم البزنس أو المنتج...">
+              </div>
+            </div>
+            <div class="col-md-6 text-md-start">
+              <button class="btn btn-pink rounded-pill px-4" onclick="Businesses.openEditForm(null)">
+                <i class="bi bi-plus-lg me-1"></i> إضافة بزنس جديد
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" id="businesses-list-container">
+          <!-- بطاقات البزنسات النشطة تظهر هنا -->
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 3: إضافة / تعديل بزنس (Add Business)   -->
+      <!-- ============================================== -->
+      <div id="add-business-view" class="app-view fade-in" style="display: none;">
+        <div class="row justify-content-center">
+          <div class="col-xl-9">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+              <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-4">
+                <div>
+                  <h4 class="fw-bold text-pink mb-1" id="business-form-title">إضافة بزنس جديد</h4>
+                  <p class="text-muted mb-0 small">سجلي تفاصيل المنتج وتكاليف الشحن والجمارك بدقة لحساب تكلفة القطعة الصحيحة</p>
+                </div>
+                <button class="btn btn-outline-secondary rounded-pill btn-sm" onclick="App.navigateTo('active-businesses')">
+                  <i class="bi bi-arrow-right me-1"></i> إلغاء والرجوع
+                </button>
+              </div>
+
+              <form id="business-form">
+                <input type="hidden" id="form-edit-business-id" value="">
+
+                <!-- 1. البيانات الأساسية -->
+                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-info-circle text-pink me-2"></i>1. المعلومات الأساسية</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-sm">اسم البزنس <span class="text-danger">*</span></label>
+                    <input type="text" id="biz-name-input" class="form-control rounded-3" placeholder="مثال: متجر نوار للأزياء" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-sm">اسم المنتج <span class="text-danger">*</span></label>
+                    <input type="text" id="biz-product-name" class="form-control rounded-3" placeholder="مثال: فساتين سهرة حريرية" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold text-sm">مكان شراء البضاعة</label>
+                    <select id="biz-location" class="form-select rounded-3">
+                      <option value="libya">ليبيا (محلي)</option>
+                      <option value="china">الصين (استيراد)</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold text-sm">تاريخ الشراء</label>
+                    <input type="date" id="biz-purchase-date" class="form-control rounded-3" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold text-sm">عدد القطع الإجمالي <span class="text-danger">*</span></label>
+                    <input type="number" id="biz-total-units" min="1" class="form-control rounded-3" placeholder="مثال: 100" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-sm">صورة المنتج (اختياري)</label>
+                    <input type="file" id="biz-image-file" class="form-control rounded-3" accept="image/*">
+                    <small class="text-muted">يمكنك رفع صورة من جهازك لحفظها مع بيانات البزنس</small>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold text-sm">وصف البزنس والمنتج</label>
+                    <input type="text" id="biz-description" class="form-control rounded-3" placeholder="وصف اختياري للمواصفات أو المورد">
+                  </div>
+                </div>
+
+                <!-- 2. التكاليف وحساب تكلفة القطعة -->
+                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-calculator text-purple me-2"></i>2. التكاليف ورأس المال</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold text-sm">عملة الشراء الأساسية</label>
+                    <select id="biz-currency" class="form-select rounded-3">
+                      <option value="LYD">دينار ليبي (LYD)</option>
+                      <option value="USD">دولار أمريكي (USD)</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-5" id="biz-lyd-group">
+                    <label class="form-label fw-bold text-sm">تكلفة شراء البضاعة (بالدينار الليبي)</label>
+                    <input type="number" id="biz-cost-lyd" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
+                  </div>
+
+                  <div class="col-md-9" id="biz-usd-group" style="display: none;">
+                    <div class="row g-2">
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold text-sm">التكلفة الإجمالية (بالدولار $)</label>
+                        <input type="number" id="biz-cost-usd" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold text-sm">سعر صرف الدولار (مقابل الدينار)</label>
+                        <input type="number" id="biz-exchange-rate" step="0.01" min="0.1" class="form-control rounded-3" placeholder="مثال: 5.20" value="5.20">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold text-sm">تكاليف الشحن والنقل (د.ل)</label>
+                    <input type="number" id="biz-shipping-cost" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold text-sm">الجمارك والرسوم (د.ل)</label>
+                    <input type="number" id="biz-customs-cost" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-bold text-sm">تكاليف إضافية أخرى (د.ل)</label>
+                    <input type="number" id="biz-additional-cost" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                  </div>
+                </div>
+
+                <!-- 3. الإعلانات الممولة -->
+                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-badge-ad text-pink me-2"></i>3. الإعلانات الممولة (اختياري)</h5>
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="biz-enable-ads">
+                  <label class="form-check-label fw-bold" for="biz-enable-ads">تفعيل وتتبع الإعلانات الممولة لهذا البزنس</label>
+                </div>
+
+                <div id="biz-ads-container" class="p-3 bg-pink-subtle rounded-3 mb-4" style="display: none;">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-sm">ميزانية الإعلان المخططة</label>
+                      <input type="number" id="biz-ad-budget" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-sm">عملة ميزانية الإعلان</label>
+                      <select id="biz-ad-currency" class="form-select rounded-3">
+                        <option value="USD">دولار أمريكي (USD)</option>
+                        <option value="LYD">دينار ليبي (LYD)</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label fw-bold text-sm">المبلغ المصروف فعلياً حتى الآن</label>
+                      <input type="number" id="biz-ad-spent" step="any" min="0" class="form-control rounded-3" placeholder="0.00" value="0">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- صندوق الملخص الحي للتكلفة لمنع الأخطاء -->
+                <div class="card border-0 bg-pink-subtle rounded-4 p-4 mb-4">
+                  <h6 class="fw-bold text-pink mb-3"><i class="bi bi-shield-check me-1"></i>ملخص الحساب المالي قبل الحفظ (تحديث حي لمنع الازدواجية):</h6>
+                  <div class="row g-2 text-sm">
+                    <div class="col-6 col-md-4">
+                      <span class="text-muted d-block text-xs">تكلفة البضاعة الأساسية:</span>
+                      <strong id="live-summary-base-cost">0.00 د.ل</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <span class="text-muted d-block text-xs">الشحن والجمارك:</span>
+                      <strong><span id="live-summary-shipping">0.00 د.ل</span> + <span id="live-summary-customs">0.00 د.ل</span></strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <span class="text-muted d-block text-xs">إجمالي تكلفة المخزون (رأس المال):</span>
+                      <strong class="text-pink fs-6" id="live-summary-total-cost">0.00 د.ل</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <span class="text-muted d-block text-xs">عدد القطع:</span>
+                      <strong id="live-summary-units">0 قطعة</strong>
+                    </div>
+                    <div class="col-12 col-md-8">
+                      <span class="text-muted d-block text-xs">متوسط تكلفة القطعة الواحدة:</span>
+                      <strong class="text-success fs-5" id="live-summary-unit-cost">0.00 د.ل</strong>
+                      <small class="text-muted d-block">(سيتم استخدامها لحساب تكلفة البضاعة المباعة COGS تلقائياً)</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-end">
+                  <button type="submit" id="biz-submit-btn" class="btn btn-pink px-5 py-2 rounded-pill">
+                    <i class="bi bi-check-circle me-1"></i> حفظ وتثبيت البزنس
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 4: أرشيف البزنسات (Archive View)       -->
+      <!-- ============================================== -->
+      <div id="archive-view" class="app-view fade-in" style="display: none;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+          <div class="row g-3 align-items-center">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" id="archive-search-input" class="form-control border-start-0" placeholder="ابحثي في الأرشيف...">
+              </div>
+            </div>
+            <div class="col-md-6 d-flex justify-content-md-end gap-2">
+              <select id="archive-sort-select" class="form-select rounded-pill w-auto">
+                <option value="date-desc">الأحدث إغلاقاً</option>
+                <option value="profit-desc">الأعلى ربحاً</option>
+                <option value="profit-asc">الأقل ربحاً</option>
+                <option value="name-asc">ترتيب أبجدي</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" id="archive-list-container">
+          <!-- بطاقات الأرشيف تظهر هنا -->
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 5: جميع المبيعات (Sales View)          -->
+      <!-- ============================================== -->
+      <div id="sales-view" class="app-view fade-in" style="display: none;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+              <label class="fw-bold small text-muted mb-0">تصفية حسب البزنس:</label>
+              <select id="sales-filter-business" class="form-select rounded-pill form-select-sm w-auto">
+                <option value="">جميع البزنسات</option>
+              </select>
+            </div>
+            <button class="btn btn-pink rounded-pill px-4 btn-sm" onclick="Sales.openAddSaleModal()">
+              <i class="bi bi-cart-plus me-1"></i> تسجيل عملية بيع جديدة
+            </button>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0 text-nowrap">
+              <thead class="bg-pink-subtle">
+                <tr>
+                  <th>التاريخ</th>
+                  <th>البزنس</th>
+                  <th>الكمية</th>
+                  <th>سعر القطعة</th>
+                  <th>الخصم</th>
+                  <th>صافي البيع</th>
+                  <th>ربح العملية</th>
+                  <th>حالة الدفع</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="all-sales-table-body">
+                <!-- يُملأ برمجياً -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 6: المصروفات (Expenses View)          -->
+      <!-- ============================================== -->
+      <div id="expenses-view" class="app-view fade-in" style="display: none;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <label class="fw-bold small text-muted mb-0">تصفية:</label>
+              <select id="expense-filter-business" class="form-select rounded-pill form-select-sm w-auto">
+                <option value="">جميع البزنسات</option>
+              </select>
+              <select id="expense-filter-category" class="form-select rounded-pill form-select-sm w-auto">
+                <option value="">جميع الفئات</option>
+                <option value="ads">إعلانات ممولة</option>
+                <option value="packaging">تغليف وتعبئة</option>
+                <option value="shipping">شحن وتوصيل</option>
+                <option value="customs">جمارك ورسوم</option>
+                <option value="returns">مرتجع</option>
+                <option value="other">أخرى</option>
+              </select>
+            </div>
+            <button class="btn btn-pink rounded-pill px-4 btn-sm" onclick="Expenses.openAddExpenseModal()">
+              <i class="bi bi-plus-lg me-1"></i> إضافة مصروف
+            </button>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0 text-nowrap">
+              <thead class="bg-pink-subtle">
+                <tr>
+                  <th>التاريخ</th>
+                  <th>البزنس</th>
+                  <th>الفئة</th>
+                  <th>الوصف / البيان</th>
+                  <th>المبلغ الأصلي</th>
+                  <th>القيمة المعادلة (د.ل)</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="all-expenses-table-body">
+                <!-- يُملأ برمجياً -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 7: التقارير المالية (Reports View)     -->
+      <!-- ============================================== -->
+      <div id="reports-view" class="app-view fade-in" style="display: none;">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white d-flex flex-row justify-content-between align-items-center">
+          <div>
+            <h5 class="fw-bold mb-1">التقرير المالي العام والأداء</h5>
+            <small class="text-muted">نظرة شاملة ومفصلة على التكاليف والمبيعات ونسب الربحية</small>
+          </div>
+          <button class="btn btn-outline-pink rounded-pill px-4 btn-sm" onclick="Reports.exportToCSV()">
+            <i class="bi bi-printer me-1"></i> طباعة / تصدير PDF
+          </button>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <div class="stat-card">
+              <small class="text-muted d-block">إجمالي المستثمر</small>
+              <div class="stat-value text-dark" id="rep-total-invested">0.00 د.ل</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <small class="text-muted d-block">إجمالي المبيعات المحققة</small>
+              <div class="stat-value text-pink" id="rep-total-sales">0.00 د.ل</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <small class="text-muted d-block">إجمالي المصروفات</small>
+              <div class="stat-value text-dark" id="rep-total-expenses">0.00 د.ل</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <small class="text-muted d-block">صافي الأرباح المحققة</small>
+              <div class="stat-value text-profit" id="rep-net-profit">0.00 د.ل</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0 text-nowrap">
+              <thead class="bg-pink-subtle">
+                <tr>
+                  <th>البزنس</th>
+                  <th>الحالة</th>
+                  <th>رأس المال (د.ل)</th>
+                  <th>المبيعات (د.ل)</th>
+                  <th>تكلفة البضاعة المباعة COGS</th>
+                  <th>المصروفات (د.ل)</th>
+                  <th>صافي الربح / الخسارة</th>
+                  <th>هامش الربح %</th>
+                </tr>
+              </thead>
+              <tbody id="reports-summary-table-body">
+                <!-- يُملأ برمجياً -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SECTION 8: الإعدادات و Firebase (Settings View)-->
+      <!-- ============================================== -->
+      <div id="settings-view" class="app-view fade-in" style="display: none;">
+        <div class="row justify-content-center">
+          <div class="col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+              <h5 class="fw-bold text-pink mb-3"><i class="bi bi-fire me-2"></i>ربط وتكوين Firebase أونلاين</h5>
+              <p class="text-muted small">
+                يمكنك إدخال مفاتيح مشروعك الخاص على Firebase Cloud Firestore و Authentication هنا. يتم تخزينها بأمان في متصفحك لربط بياناتك الحقيقية أونلاين ومشاركتها عبر أجهزتك.
+              </p>
+
+              <form id="firebase-settings-form">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold">API Key</label>
+                    <input type="text" id="cfg-api-key" class="form-control rounded-3" placeholder="AIzaSy...">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold">Auth Domain</label>
+                    <input type="text" id="cfg-auth-domain" class="form-control rounded-3" placeholder="your-app.firebaseapp.com">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold">Project ID</label>
+                    <input type="text" id="cfg-project-id" class="form-control rounded-3" placeholder="your-project-id">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold">Storage Bucket</label>
+                    <input type="text" id="cfg-storage-bucket" class="form-control rounded-3" placeholder="your-app.appspot.com">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold">Messaging Sender ID</label>
+                    <input type="text" id="cfg-sender-id" class="form-control rounded-3" placeholder="123456789">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold">App ID</label>
+                    <input type="text" id="cfg-app-id" class="form-control rounded-3" placeholder="1:123456:web:abcd">
+                  </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between align-items-center">
+                  <button type="submit" class="btn btn-pink rounded-pill px-4">
+                    <i class="bi bi-cloud-arrow-up me-1"></i> حفظ وتفعيل Firebase
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary rounded-pill btn-sm" onclick="FirebaseApp.resetConfig()">
+                    استعادة الإعدادات التلقائية
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- أدوات البيانات السريعة -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+              <h6 class="fw-bold mb-3"><i class="bi bi-tools text-purple me-2"></i>أدوات إدارة البيانات</h6>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" id="btn-seed-sample-data" class="btn btn-pink-subtle rounded-pill px-4">
+                  <i class="bi bi-magic me-1"></i> ملء بيانات توضيحية تجريبية
+                </button>
+                <button type="button" id="btn-clear-all-data" class="btn btn-outline-danger rounded-pill px-4">
+                  <i class="bi bi-trash3 me-1"></i> مسح جميع البيانات المخزنة محلياً
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- 3. النوافذ المنبثقة MODALS                      -->
+  <!-- ============================================== -->
+
+  <!-- نافذة تفاصيل البزنس الشاملة (Business Details Modal) -->
+  <div class="modal fade" id="businessDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-pink-soft text-pink p-2">
+              <i class="bi bi-shop fs-4"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold" id="biz-details-title">تفاصيل البزنس</h5>
+              <small class="text-muted">المنتج: <span id="biz-details-product"></span> • الشراء من: <span id="biz-details-location"></span> • التاريخ: <span id="biz-details-date"></span></small>
+            </div>
+          </div>
+          <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <!-- البطاقات الرقمية للبزنس -->
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">إجمالي القطع</span>
+                <span class="fw-bold fs-5" id="biz-details-total-units">0</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">القطع المباعة</span>
+                <span class="fw-bold fs-5 text-pink" id="biz-details-sold-units">0</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">المخزون المتبقي</span>
+                <span class="fw-bold fs-5 text-dark" id="biz-details-remaining-units">0</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">تكلفة القطعة الواحدة</span>
+                <span class="fw-bold fs-5 text-purple" id="biz-details-unit-cost">0.00 د.ل</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">رأس المال (تكلفة البضاعة)</span>
+                <span class="fw-bold" id="biz-details-invested">0.00 د.ل</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">إجمالي المبيعات</span>
+                <span class="fw-bold text-pink" id="biz-details-sales">0.00 د.ل</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">تكلفة البضاعة المباعة COGS</span>
+                <span class="fw-bold" id="biz-details-cogs">0.00 د.ل</span>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="stat-card p-3">
+                <span class="text-muted d-block text-xs">إجمالي المصروفات</span>
+                <span class="fw-bold text-dark" id="biz-details-expenses">0.00 د.ل</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- النتائج المالية البارزة -->
+          <div class="card border-0 bg-pink-subtle rounded-4 p-4 mb-4">
+            <div class="row align-items-center text-center text-md-start">
+              <div class="col-md-4 mb-3 mb-md-0">
+                <span class="text-muted d-block text-xs">صافي الربح أو الخسارة</span>
+                <div id="biz-details-net-profit" class="fw-bold fs-3 text-profit">0.00 د.ل</div>
+              </div>
+              <div class="col-md-3 mb-3 mb-md-0">
+                <span class="text-muted d-block text-xs">نسبة هامش الربح</span>
+                <div id="biz-details-profit-rate" class="fw-bold fs-4 text-purple">0%</div>
+              </div>
+              <div class="col-md-5">
+                <div class="d-flex justify-content-between text-sm mb-1">
+                  <span class="text-muted">المبالغ المحصلة فعلاً:</span>
+                  <strong class="text-success" id="biz-details-collected">0.00 د.ل</strong>
+                </div>
+                <div class="d-flex justify-content-between text-sm">
+                  <span class="text-muted">المبالغ المستحقة من الزبائن:</span>
+                  <strong class="text-danger" id="biz-details-receivable">0.00 د.ل</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- قسم الإعلانات الممولة إن كانت مفعلة -->
+          <div id="biz-details-ads-section" class="card border-0 bg-white shadow-sm rounded-4 p-3 mb-4" style="display: none;">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-badge-ad text-pink me-2"></i>الإعلانات الممولة:</h6>
+            <div class="d-flex gap-4 text-sm">
+              <div>الميزانية المحددة: <strong id="biz-details-ads-budget"></strong></div>
+              <div>المصروف فعلياً: <strong class="text-pink" id="biz-details-ads-spent"></strong></div>
+            </div>
+          </div>
+
+          <!-- تبويبات المبيعات والمصروفات -->
+          <ul class="nav nav-pills mb-3 gap-2" id="bizDetailsTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active rounded-pill px-4 btn-sm" id="biz-sales-tab" data-bs-toggle="pill" data-bs-target="#biz-sales-pane" type="button">
+                <i class="bi bi-cart me-1"></i> سجل المبيعات
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link rounded-pill px-4 btn-sm" id="biz-expenses-tab" data-bs-toggle="pill" data-bs-target="#biz-expenses-pane" type="button">
+                <i class="bi bi-wallet2 me-1"></i> المصروفات
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="bizDetailsTabContent">
+            <!-- تبويب مبيعات هذا البزنس -->
+            <div class="tab-pane fade show active" id="biz-sales-pane">
+              <div class="table-responsive">
+                <table class="table align-middle mb-0 text-nowrap">
+                  <thead class="bg-light">
+                    <tr>
+                      <th>التاريخ</th>
+                      <th>الكمية</th>
+                      <th>سعر القطعة</th>
+                      <th>صافي البيع</th>
+                      <th>ربح العملية</th>
+                      <th>الحالة</th>
+                      <th>إجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody id="biz-details-sales-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- تبويب مصروفات هذا البزنس -->
+            <div class="tab-pane fade" id="biz-expenses-pane">
+              <div class="table-responsive">
+                <table class="table align-middle mb-0 text-nowrap">
+                  <thead class="bg-light">
+                    <tr>
+                      <th>التاريخ</th>
+                      <th>النوع</th>
+                      <th>الوصف</th>
+                      <th>المبلغ</th>
+                      <th>إجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody id="biz-details-expenses-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer d-flex justify-content-between align-items-center">
+          <div class="d-flex gap-2">
+            <button class="btn btn-pink rounded-pill btn-sm px-3" id="biz-action-add-sale">
+              <i class="bi bi-cart-plus me-1"></i> تسجيل بيع
+            </button>
+            <button class="btn btn-outline-pink rounded-pill btn-sm px-3" id="biz-action-add-exp">
+              <i class="bi bi-wallet me-1"></i> إضافة مصروف
+            </button>
+            <button class="btn btn-outline-secondary rounded-pill btn-sm px-3" id="biz-action-edit-btn">
+              <i class="bi bi-pencil me-1"></i> تعديل بيانات البزنس
+            </button>
+          </div>
+          <button class="btn btn-outline-danger rounded-pill btn-sm" id="biz-action-close-btn">
+            <i class="bi bi-archive me-1"></i> إغلاق البزنس وأرشفته
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تسجيل عملية بيع (Add Sale Modal) -->
+  <div class="modal fade" id="saleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-pink"><i class="bi bi-cart-plus me-2"></i>تسجيل عملية بيع</h5>
+          <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <form id="sale-form">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label fw-bold text-sm">البزنس التجاري <span class="text-danger">*</span></label>
+              <select id="sale-business-select" class="form-select rounded-3" required></select>
+              <small class="text-pink mt-1 d-block" id="sale-available-stock-hint"></small>
+            </div>
+
+            <div id="sale-stock-warning" class="alert alert-danger py-2 small mb-3" style="display: none;"></div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">عدد القطع المباعة <span class="text-danger">*</span></label>
+                <input type="number" id="sale-quantity" min="1" class="form-control rounded-3" placeholder="1" required value="1">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">سعر بيع القطعة (د.ل) <span class="text-danger">*</span></label>
+                <input type="number" id="sale-unit-price" step="any" min="0" class="form-control rounded-3" placeholder="0.00" required>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">الخصم الممنوح (د.ل)</label>
+                <input type="number" id="sale-discount" step="any" min="0" class="form-control rounded-3" value="0">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">مصروفات العملية (د.ل)</label>
+                <input type="number" id="sale-expense" step="any" min="0" class="form-control rounded-3" value="0" title="مثل توصيل خاص للزبون">
+              </div>
+            </div>
+
+            <!-- إجمالي الفاتورة المباشر -->
+            <div class="p-3 bg-pink-subtle rounded-3 mb-3 d-flex justify-content-between align-items-center">
+              <span class="fw-bold small text-muted">صافي إجمالي الفاتورة:</span>
+              <strong class="text-pink fs-5" id="sale-live-net-total">0.00 د.ل</strong>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">المبلغ المدفوع (د.ل)</label>
+                <input type="number" id="sale-paid-amount" step="any" min="0" class="form-control rounded-3" placeholder="0.00">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">حالة الدفع</label>
+                <select id="sale-payment-status" class="form-select rounded-3">
+                  <option value="paid">مدفوع بالكامل</option>
+                  <option value="partial">مدفوع جزئياً</option>
+                  <option value="unpaid">غير مدفوع (آجل)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold text-sm">تاريخ البيع</label>
+              <input type="date" id="sale-date" class="form-control rounded-3" required>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label fw-bold text-sm">ملاحظات اختيارية</label>
+              <input type="text" id="sale-notes" class="form-control rounded-3" placeholder="اسم الزبون، المدينة، أو ملاحظة خاصة">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary rounded-pill btn-sm" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" id="sale-submit-btn" class="btn btn-pink rounded-pill px-4">
+              <i class="bi bi-check2-circle me-1"></i> حفظ العملية
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة إضافة مصروف (Add Expense Modal) -->
+  <div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-pink"><i class="bi bi-wallet2 me-2"></i>تسجيل مصروف</h5>
+          <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <form id="expense-form">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label fw-bold text-sm">البزنس المرتبط <span class="text-danger">*</span></label>
+              <select id="expense-business-select" class="form-select rounded-3" required></select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold text-sm">فئة المصروف</label>
+              <select id="expense-category" class="form-select rounded-3" required>
+                <option value="ads">إعلانات ممولة</option>
+                <option value="packaging">تغليف وتعبئة</option>
+                <option value="shipping">شحن وتوصيل</option>
+                <option value="customs">جمارك ورسوم</option>
+                <option value="returns">مرتجع أو تعويض</option>
+                <option value="other">مصروفات أخرى</option>
+              </select>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">المبلغ <span class="text-danger">*</span></label>
+                <input type="number" id="expense-amount" step="any" min="0" class="form-control rounded-3" placeholder="0.00" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold text-sm">العملة</label>
+                <select id="expense-currency" class="form-select rounded-3">
+                  <option value="LYD">دينار ليبي (LYD)</option>
+                  <option value="USD">دولار أمريكي (USD)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3" id="expense-usd-rate-group" style="display: none;">
+              <label class="form-label fw-bold text-sm">سعر صرف الدولار (مقابل الدينار)</label>
+              <input type="number" id="expense-exchange-rate" step="0.01" min="0.1" class="form-control rounded-3" value="5.20">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold text-sm">التاريخ</label>
+              <input type="date" id="expense-date" class="form-control rounded-3" required>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label fw-bold text-sm">الوصف والبيان</label>
+              <input type="text" id="expense-description" class="form-control rounded-3" placeholder="مثال: حملة إعلانات تيك توك، أكياس وردية، إلخ">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary rounded-pill btn-sm" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" id="expense-submit-btn" class="btn btn-pink rounded-pill px-4">
+              <i class="bi bi-check2-circle me-1"></i> حفظ المصروف
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة إغلاق البزنس وتأكيده (Close Business Modal) -->
+  <div class="modal fade" id="closeBusinessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-danger"><i class="bi bi-archive me-2"></i>إغلاق البزنس وأرشفته</h5>
+          <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <p class="mb-3">هل أنتِ متأكدة من إغلاق البزنس: <strong id="close-modal-biz-name" class="text-pink"></strong>؟</p>
+
+          <div class="card border-0 bg-pink-subtle rounded-3 p-3 mb-3 text-sm">
+            <div class="d-flex justify-content-between mb-2">
+              <span>المخزون المتبقي:</span>
+              <strong id="close-modal-remaining-units">0 قطعة</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>قيمة المخزون المتبقي:</span>
+              <strong id="close-modal-remaining-val">0.00 د.ل</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>صافي النتيجة المالية:</span>
+              <strong id="close-modal-net-profit">0.00 د.ل</strong>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-sm">ملاحظات الإغلاق (كيفية التعامل مع المتبقي إن وجد):</label>
+            <textarea id="close-modal-notes" class="form-control rounded-3" rows="2" placeholder="مثال: تم بيع باقي الكمية بسعر التصفية أو تم الاحتفاظ بها شخصياً"></textarea>
+          </div>
+
+          <small class="text-muted d-block">
+            <i class="bi bi-info-circle me-1"></i>
+            سيتم نقل البزنس إلى الأرشيف مع الاحتفاظ بجميع بياناته المالية وإمكانية إعادة فتحه في أي وقت.
+          </small>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary rounded-pill btn-sm" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" id="confirm-close-biz-btn" class="btn btn-danger rounded-pill px-4">
+            <i class="bi bi-lock me-1"></i> تأكيد الإغلاق والأرشفة
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- حاوية إشعارات Toast التفاعلية العصرية -->
+  <div class="toast-container position-fixed bottom-0 start-0 p-3" id="toast-container" style="z-index: 2000;"></div>
+
+  <!-- ============================================== -->
+  <!-- 4. ملفات جافاسكريبت والمكتبات عبر CDN          -->
+  <!-- ============================================== -->
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Chart.js للرسوم البيانية التفاعلية -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Firebase SDKs (Compatibility CDN v9+ لسهولة التشغيل على GitHub Pages بدون خادم بناء) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+  <!-- وحدات تطبيق Business Manager -->
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/calculations.js"></script>
+  <script src="./js/database.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/dashboard.js"></script>
+  <script src="./js/businesses.js"></script>
+  <script src="./js/sales.js"></script>
+  <script src="./js/expenses.js"></script>
+  <script src="./js/archive.js"></script>
+  <script src="./js/reports.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
