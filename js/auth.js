@@ -76,7 +76,7 @@ const Auth = {
         return { success: true, user: this.currentUser };
       } catch (error) {
         console.error('Firebase Auth Login Error:', error);
-        return { success: false, error: this.getArabicAuthError(error.code) };
+        return { success: false, error: this.getArabicAuthError(error.code, error.message) };
       }
     } else {
       // وضع المالك الشخصي الافتراضي بدون خادم
@@ -149,20 +149,27 @@ const Auth = {
     }
   },
 
-  getArabicAuthError(code) {
+  getArabicAuthError(code, message) {
     switch (code) {
       case 'auth/user-not-found':
-        return 'لا يوجد حساب مسجل بهذا البريد الإلكتروني.';
+        return 'لا يوجد مستخدم مسجل بهذا البريد الإلكتروني في Firebase Authentication.';
       case 'auth/wrong-password':
-        return 'كلمة المرور غير صحيحة.';
+      case 'auth/invalid-credential':
+        return 'كلمة المرور غير صحيحة أو البيانات غير متطابقة.';
       case 'auth/invalid-email':
         return 'صيغة البريد الإلكتروني غير صالحة.';
       case 'auth/user-disabled':
-        return 'تم تعطيل هذا الحساب.';
+        return 'تم تعطيل هذا الحساب من قِبل المشرف.';
       case 'auth/too-many-requests':
-        return 'تم حظر الدخول مؤقتاً لكثرة المحاولات الفاشلة، يرجى المحاولة لاحقاً.';
+        return 'تم حظر الدخول مؤقتاً لكثرة المحاولات، يرجى الانتظار والمحاولة لاحقاً.';
+      case 'auth/network-request-failed':
+        return 'فشل الاتصال بالإنترنت أو تعذر الوصول إلى خوادم Firebase.';
+      case 'auth/operation-not-allowed':
+        return 'طريقة الدخول عبر Email/Password غير مفعلة في Firebase Authentication Console.';
+      case 'auth/unauthorized-domain':
+        return 'نطاق الموقع (Domain) غير مضاف في قائمة Authorized Domains في Firebase Console.';
       default:
-        return 'حدث خطأ أثناء تسجيل الدخول: ' + code;
+        return 'حدث خطأ أثناء تسجيل الدخول: ' + (code || '') + (message ? ` (${message})` : '');
     }
   }
 };

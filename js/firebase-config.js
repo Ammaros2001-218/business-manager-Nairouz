@@ -14,16 +14,6 @@ const DEFAULT_FIREBASE_CONFIG = {
   messagingSenderId: "228073113161",
   appId: "1:228073113161:web:02b262ad05de11a1542198"
 };
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
 
 function getFirebaseConfig() {
   const saved = localStorage.getItem('bm_firebase_config');
