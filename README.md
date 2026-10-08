@@ -103,27 +103,27 @@ Nairouz/
 
 ---
 
-## ☁️ خطوات ربط Firebase أونلاين (اختياري للربط السحابي)
+## ☁️ خطوات ربط Firebase Realtime Database أونلاين
 
-إذا أردتِ ربط حسابك السحابي في Firebase ومزامنة البيانات بين الهاتف والكمبيوتر:
+إذا أردتِ ربط حسابك السحابي ومزامنة البيانات اللحظية (Realtime) بين الهاتف والكمبيوتر:
 
 1. افتحي [Firebase Console](https://console.firebase.google.com/) وأنشئي مشروعاً جديداً.
 2. من القائمة الجانبية، فعّلي **Authentication** واختاري طريقة **Email/Password**.
 3. أضيفي مستخدماً جديداً (بريدك وكلمة مرورك الخاصة).
-4. من القائمة الجانبية، فعّلي **Firestore Database** في وضع الإنتاج (Production Mode).
-5. في تبويب **Rules** بقاعدة بيانات Firestore، ضعي قواعد الأمان لحماية بياناتك:
-   ```javascript
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /{document=**} {
-         allow read, write: if request.auth != null;
-       }
+4. من القائمة الجانبية، اضغطي على **Build** ثم **Realtime Database**، واضغطي **Create Database**.
+5. اختاري موقع الخادم (مثلاً `United States` أو `Belgium`)، واختاري وضع الأمان **Locked mode** ثم اضغطي **Enable**.
+6. في تبويب **Rules** بقاعدة بيانات **Realtime Database**، ضعي قواعد الأمان لحماية بياناتك:
+   ```json
+   {
+     "rules": {
+       ".read": "auth != null",
+       ".write": "auth != null"
      }
    }
    ```
-6. اذهبي إلى **Project Settings** (إعدادات المشروع) وأضيفي تطبيق ويب للحصول على مفاتيح `firebaseConfig`.
-7. افتحي موقعك، ثم توجهي إلى قسم **الإعدادات و Firebase** وألصقي المفاتيح هناك واضغطي **حفظ وتفعيل**، وسيبدأ الموقع فوراً بالعمل أونلاين على السحابة!
+   ثم اضغطي **Publish**.
+7. اذهبي إلى **Project Settings** (إعدادات المشروع ⚙️) وأضيفي تطبيق ويب للحصول على `firebaseConfig` (يتضمن `databaseURL` و `apiKey` و `projectId`).
+8. افتحي موقعك، ثم توجهي إلى قسم **الإعدادات و Firebase** وألصقي المفاتيح هناك واضغطي **حفظ وتفعيل Firebase**، وستعمل قاعدة البيانات السحابية الحية لحظياً!
 
 ---
 

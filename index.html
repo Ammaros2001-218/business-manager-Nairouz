@@ -714,9 +714,9 @@
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
-              <h5 class="fw-bold text-pink mb-3"><i class="bi bi-fire me-2"></i>ربط وتكوين Firebase أونلاين</h5>
+              <h5 class="fw-bold text-pink mb-3"><i class="bi bi-fire me-2"></i>ربط وتكوين Firebase Realtime Database أونلاين</h5>
               <p class="text-muted small">
-                يمكنك إدخال مفاتيح مشروعك الخاص على Firebase Cloud Firestore و Authentication هنا. يتم تخزينها بأمان في متصفحك لربط بياناتك الحقيقية أونلاين ومشاركتها عبر أجهزتك.
+                يمكنك إدخال مفاتيح مشروعك الخاص على <strong>Firebase Realtime Database (RTDB)</strong> و Authentication هنا. يتم تخزينها بأمان في متصفحك لربط بياناتك الحقيقية أونلاين وتحديثها لحظياً (Realtime) دون الحاجة لإعادة تحميل الصفحة.
               </p>
 
               <form id="firebase-settings-form">
@@ -724,6 +724,10 @@
                   <div class="col-md-6">
                     <label class="form-label text-xs fw-bold">API Key</label>
                     <input type="text" id="cfg-api-key" class="form-control rounded-3" placeholder="AIzaSy...">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-xs fw-bold">Database URL (رابط Realtime Database)</label>
+                    <input type="text" id="cfg-database-url" class="form-control rounded-3" placeholder="https://your-project-default-rtdb.firebaseio.com">
                   </div>
                   <div class="col-md-6">
                     <label class="form-label text-xs fw-bold">Auth Domain</label>
@@ -736,10 +740,6 @@
                   <div class="col-md-6">
                     <label class="form-label text-xs fw-bold">Storage Bucket</label>
                     <input type="text" id="cfg-storage-bucket" class="form-control rounded-3" placeholder="your-app.appspot.com">
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label text-xs fw-bold">Messaging Sender ID</label>
-                    <input type="text" id="cfg-sender-id" class="form-control rounded-3" placeholder="123456789">
                   </div>
                   <div class="col-md-6">
                     <label class="form-label text-xs fw-bold">App ID</label>
@@ -1179,7 +1179,7 @@
   <!-- Firebase SDKs (Compatibility CDN v9+ لسهولة التشغيل على GitHub Pages بدون خادم بناء) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
   <!-- وحدات تطبيق Business Manager -->

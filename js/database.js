@@ -1,50 +1,113 @@
 /**
  * database.js
  * طبقة الوصول للبيانات Data Access Layer (DAL)
- * تدعم Cloud Firestore مباشرة عند توفر بيانات الاعتماد الصالحة،
- * وتتضمن حماية Fallback تخزين محلي (LocalStorage) تلقائياً لمعاينة الموقع واختباره بسلاسة على أي جهاز أو GitHub Pages
+ * تستخدم Firebase Realtime Database (RTDB) بالكامل:
+ * ref(), set(), get(), update(), remove(), push(), onValue() (on('value'))
+ * مع دعم التحديث اللحظي المباشر (Realtime Listeners) والتخزين المحلي الاحتياطي
  */
 
 const Database = {
-  // معرف المجموعة
-  COLLECTIONS: {
+  // مسارات العقد الرئيسية في Realtime Database
+  PATHS: {
     BUSINESSES: 'businesses',
     SALES: 'sales',
     EXPENSES: 'expenses',
-    INVENTORY_LOGS: 'inventory_logs',
     SETTINGS: 'settings'
   },
 
-  // التحقق إن كانت إعدادات Firebase غير وهمية ومفعلة
-  canUseFirestore() {
+  _realtimeListenersAttached: false,
+
+  // التحقق إن كانت إعدادات Firebase مهيأة وصالحة للاتصال بـ Realtime Database
+  canUseRTDB() {
     const config = FirebaseApp.getConfig();
     const isDummy = !config.apiKey || config.apiKey.includes('DummyKey');
     const auth = FirebaseApp.getAuth();
-    // إذا كان المستخدم مسجلاً دخوله في Firebase أو Firestore مهيأ بدون dummy
-    return FirebaseApp.isInitialized() && !isDummy && (auth && auth.currentUser);
+    const db = FirebaseApp.getDb();
+    return FirebaseApp.isInitialized() && !isDummy && db && auth && auth.currentUser;
   },
 
-  // ========== إدارة البزنسات BUSINESSES ==========
-  async getAllBusinesses() {
-    if (this.canUseFirestore()) {
+  /**
+   * ربط مستمعات التحديث اللحظي (Realtime Listeners)
+   * عند حدوث أي إضافة أو تعديل أو حذف في قاعدة البيانات السحابية،
+   * تتحدث واجهة المستخدم فوراً دون الحاجة لتحديث الصفحة
+   */
+  initRealtimeSync(onDataChangeCallback) {
+    if (this._realtimeListenersAttached) return;
+
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        const snapshot = await db.collection(this.COLLECTIONS.BUSINESSES).orderBy('createdAt', 'desc').get();
-        const list = [];
-        snapshot.forEach(doc => {
-          list.push({ id: doc.id, ...doc.data() });
+
+        // مراقبة مسار البزنسات لحظياً
+        const bizRef = db.ref(this.PATHS.BUSINESSES);
+        bizRef.on('value', (snapshot) => {
+          console.log('RTDB Realtime Update: Businesses changed');
+          if (onDataChangeCallback) onDataChangeCallback('businesses');
         });
-        return list;
+
+        // مراقبة مسار المبيعات لحظياً
+        const salesRef = db.ref(this.PATHS.SALES);
+        salesRef.on('value', (snapshot) => {
+          console.log('RTDB Realtime Update: Sales changed');
+          if (onDataChangeCallback) onDataChangeCallback('sales');
+        });
+
+        // مراقبة مسار المصروفات لحظياً
+        const expRef = db.ref(this.PATHS.EXPENSES);
+        expRef.on('value', (snapshot) => {
+          console.log('RTDB Realtime Update: Expenses changed');
+          if (onDataChangeCallback) onDataChangeCallback('expenses');
+        });
+
+        this._realtimeListenersAttached = true;
       } catch (err) {
-        console.warn('Firestore fetch failed, falling back to local storage:', err);
+        console.warn('Failed to bind RTDB realtime listeners:', err);
       }
     }
+  },
+
+  // =========================================================================
+  // 1. إدارة البزنسات BUSINESSES (Realtime Database)
+  // =========================================================================
+  async getAllBusinesses() {
+    if (this.canUseRTDB()) {
+      try {
+        const db = FirebaseApp.getDb();
+        const bizRef = db.ref(this.PATHS.BUSINESSES);
+        const snapshot = await bizRef.get();
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const list = [];
+          Object.keys(data).forEach(key => {
+            list.push({ id: key, ...data[key] });
+          });
+          // ترتيب حسب تاريخ الإنشاء تنازلياً
+          return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        }
+        return [];
+      } catch (err) {
+        console.warn('RTDB getAllBusinesses failed, using fallback:', err);
+      }
+    }
+
     // Fallback LocalStorage
     const local = localStorage.getItem('bm_local_businesses');
     return local ? JSON.parse(local) : [];
   },
 
   async getBusinessById(id) {
+    if (this.canUseRTDB()) {
+      try {
+        const db = FirebaseApp.getDb();
+        const docRef = db.ref(`${this.PATHS.BUSINESSES}/${id}`);
+        const snapshot = await docRef.get();
+        if (snapshot.exists()) {
+          return { id, ...snapshot.val() };
+        }
+      } catch (err) {
+        console.warn('RTDB getBusinessById error:', err);
+      }
+    }
     const all = await this.getAllBusinesses();
     return all.find(b => b.id === id) || null;
   },
@@ -56,20 +119,23 @@ const Database = {
       updatedAt: now
     };
 
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
         if (existingId) {
-          await db.collection(this.COLLECTIONS.BUSINESSES).doc(existingId).update(item);
+          const bizRef = db.ref(`${this.PATHS.BUSINESSES}/${existingId}`);
+          await bizRef.update(item);
           return { id: existingId, ...item };
         } else {
           item.createdAt = now;
-          item.status = item.status || 'active'; // active or closed
-          const ref = await db.collection(this.COLLECTIONS.BUSINESSES).add(item);
-          return { id: ref.id, ...item };
+          item.status = item.status || 'active';
+          const newRef = db.ref(this.PATHS.BUSINESSES).push();
+          const newId = newRef.key;
+          await newRef.set(item);
+          return { id: newId, ...item };
         }
       } catch (err) {
-        console.warn('Firestore save failed, using local storage:', err);
+        console.warn('RTDB saveBusiness failed, falling back to local storage:', err);
       }
     }
 
@@ -109,13 +175,14 @@ const Database = {
       updatePayload.reopenedAt = new Date().toISOString();
     }
 
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        await db.collection(this.COLLECTIONS.BUSINESSES).doc(id).update(updatePayload);
+        const bizRef = db.ref(`${this.PATHS.BUSINESSES}/${id}`);
+        await bizRef.update(updatePayload);
         return true;
       } catch (e) {
-        console.warn('Firestore update status failed, fallback to local:', e);
+        console.warn('RTDB update status failed, fallback to local:', e);
       }
     }
 
@@ -130,19 +197,38 @@ const Database = {
   },
 
   async deleteBusiness(id) {
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        await db.collection(this.COLLECTIONS.BUSINESSES).doc(id).delete();
+        // حذف البزنس
+        await db.ref(`${this.PATHS.BUSINESSES}/${id}`).remove();
+
+        // حذف المبيعات المرتبطة به
+        const salesSnap = await db.ref(this.PATHS.SALES).orderByChild('businessId').equalTo(id).get();
+        if (salesSnap.exists()) {
+          const salesData = salesSnap.val();
+          for (const sId of Object.keys(salesData)) {
+            await db.ref(`${this.PATHS.SALES}/${sId}`).remove();
+          }
+        }
+
+        // حذف المصروفات المرتبطة به
+        const expSnap = await db.ref(this.PATHS.EXPENSES).orderByChild('businessId').equalTo(id).get();
+        if (expSnap.exists()) {
+          const expData = expSnap.val();
+          for (const eId of Object.keys(expData)) {
+            await db.ref(`${this.PATHS.EXPENSES}/${eId}`).remove();
+          }
+        }
       } catch (e) {
-        console.warn(e);
+        console.warn('RTDB deleteBusiness error:', e);
       }
     }
+
     const list = await this.getAllBusinesses();
     const filtered = list.filter(b => b.id !== id);
     localStorage.setItem('bm_local_businesses', JSON.stringify(filtered));
 
-    // حذف مبيعات ومصروفات البزنس أيضاً
     const sales = await this.getAllSales();
     const filteredSales = sales.filter(s => s.businessId !== id);
     localStorage.setItem('bm_local_sales', JSON.stringify(filteredSales));
@@ -153,23 +239,32 @@ const Database = {
     return true;
   },
 
-  // ========== إدارة المبيعات SALES ==========
+  // =========================================================================
+  // 2. إدارة المبيعات SALES (Realtime Database)
+  // =========================================================================
   async getAllSales(businessId = null) {
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        let query = db.collection(this.COLLECTIONS.SALES);
+        let salesRef = db.ref(this.PATHS.SALES);
+        let snapshot;
         if (businessId) {
-          query = query.where('businessId', '==', businessId);
+          snapshot = await salesRef.orderByChild('businessId').equalTo(businessId).get();
+        } else {
+          snapshot = await salesRef.get();
         }
-        const snapshot = await query.orderBy('date', 'desc').get();
-        const list = [];
-        snapshot.forEach(doc => {
-          list.push({ id: doc.id, ...doc.data() });
-        });
-        return list;
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const list = [];
+          Object.keys(data).forEach(key => {
+            list.push({ id: key, ...data[key] });
+          });
+          return list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        }
+        return [];
       } catch (err) {
-        console.warn('Firestore sales fetch failed, fallback to local:', err);
+        console.warn('RTDB getAllSales error, fallback:', err);
       }
     }
 
@@ -178,7 +273,7 @@ const Database = {
     if (businessId) {
       list = list.filter(s => s.businessId === businessId);
     }
-    return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
   },
 
   async addSale(saleData) {
@@ -188,13 +283,15 @@ const Database = {
       createdAt: now
     };
 
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        const ref = await db.collection(this.COLLECTIONS.SALES).add(item);
-        return { id: ref.id, ...item };
+        const newRef = db.ref(this.PATHS.SALES).push();
+        const newId = newRef.key;
+        await newRef.set(item);
+        return { id: newId, ...item };
       } catch (err) {
-        console.warn('Firestore add sale failed, fallback:', err);
+        console.warn('RTDB addSale failed, fallback:', err);
       }
     }
 
@@ -210,13 +307,13 @@ const Database = {
     const now = new Date().toISOString();
     const item = { ...saleData, updatedAt: now };
 
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        await db.collection(this.COLLECTIONS.SALES).doc(id).update(item);
+        await db.ref(`${this.PATHS.SALES}/${id}`).update(item);
         return { id, ...item };
       } catch (err) {
-        console.warn('Firestore update sale failed:', err);
+        console.warn('RTDB updateSale error:', err);
       }
     }
 
@@ -231,12 +328,12 @@ const Database = {
   },
 
   async deleteSale(id) {
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        await db.collection(this.COLLECTIONS.SALES).doc(id).delete();
+        await db.ref(`${this.PATHS.SALES}/${id}`).remove();
       } catch (e) {
-        console.warn(e);
+        console.warn('RTDB deleteSale error:', e);
       }
     }
     const list = await this.getAllSales();
@@ -245,23 +342,32 @@ const Database = {
     return true;
   },
 
-  // ========== إدارة المصروفات EXPENSES ==========
+  // =========================================================================
+  // 3. إدارة المصروفات EXPENSES (Realtime Database)
+  // =========================================================================
   async getAllExpenses(businessId = null) {
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        let query = db.collection(this.COLLECTIONS.EXPENSES);
+        let expRef = db.ref(this.PATHS.EXPENSES);
+        let snapshot;
         if (businessId) {
-          query = query.where('businessId', '==', businessId);
+          snapshot = await expRef.orderByChild('businessId').equalTo(businessId).get();
+        } else {
+          snapshot = await expRef.get();
         }
-        const snapshot = await query.orderBy('date', 'desc').get();
-        const list = [];
-        snapshot.forEach(doc => {
-          list.push({ id: doc.id, ...doc.data() });
-        });
-        return list;
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const list = [];
+          Object.keys(data).forEach(key => {
+            list.push({ id: key, ...data[key] });
+          });
+          return list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        }
+        return [];
       } catch (err) {
-        console.warn('Firestore expenses fetch failed:', err);
+        console.warn('RTDB getAllExpenses error:', err);
       }
     }
 
@@ -270,7 +376,7 @@ const Database = {
     if (businessId) {
       list = list.filter(e => e.businessId === businessId);
     }
-    return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
   },
 
   async addExpense(expenseData) {
@@ -280,13 +386,15 @@ const Database = {
       createdAt: now
     };
 
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        const ref = await db.collection(this.COLLECTIONS.EXPENSES).add(item);
-        return { id: ref.id, ...item };
+        const newRef = db.ref(this.PATHS.EXPENSES).push();
+        const newId = newRef.key;
+        await newRef.set(item);
+        return { id: newId, ...item };
       } catch (err) {
-        console.warn('Firestore add expense failed:', err);
+        console.warn('RTDB addExpense error:', err);
       }
     }
 
@@ -302,13 +410,13 @@ const Database = {
     const now = new Date().toISOString();
     const item = { ...expenseData, updatedAt: now };
 
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        await db.collection(this.COLLECTIONS.EXPENSES).doc(id).update(item);
+        await db.ref(`${this.PATHS.EXPENSES}/${id}`).update(item);
         return { id, ...item };
       } catch (err) {
-        console.warn('Firestore update expense failed:', err);
+        console.warn('RTDB updateExpense error:', err);
       }
     }
 
@@ -323,12 +431,12 @@ const Database = {
   },
 
   async deleteExpense(id) {
-    if (this.canUseFirestore()) {
+    if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
-        await db.collection(this.COLLECTIONS.EXPENSES).doc(id).delete();
+        await db.ref(`${this.PATHS.EXPENSES}/${id}`).remove();
       } catch (e) {
-        console.warn(e);
+        console.warn('RTDB deleteExpense error:', e);
       }
     }
     const list = await this.getAllExpenses();
@@ -337,12 +445,13 @@ const Database = {
     return true;
   },
 
-  // ========== رفع الصور (Firebase Storage أو Base64 كبديل آمن وسهل) ==========
+  // =========================================================================
+  // 4. رفع الصور وتخزينها (Firebase Storage أو Base64)
+  // =========================================================================
   async uploadImage(file, pathPrefix = 'products') {
     if (!file) return null;
 
-    // محاولة الرفع على Firebase Storage إن كان متاحاً ومسجل الدخول
-    if (this.canUseFirestore() && FirebaseApp.getStorage()) {
+    if (this.canUseRTDB() && FirebaseApp.getStorage()) {
       try {
         const storage = FirebaseApp.getStorage();
         const ext = file.name.split('.').pop() || 'png';
@@ -356,11 +465,9 @@ const Database = {
       }
     }
 
-    // بديل فوري ممتاز دون الحاجة لتفعيل Storage Bucket: Base64 مضغوط
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        // ضغط الصورة عبر Canvas إذا كانت كبيرة
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');

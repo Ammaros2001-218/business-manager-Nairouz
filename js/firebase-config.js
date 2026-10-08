@@ -1,14 +1,14 @@
 /**
  * firebase-config.js
- * تهيئة Firebase v9+ باستخدام نمط Compatibility / Modular CDN
+ * تهيئة Firebase v9+ مع Firebase Realtime Database (RTDB)
  * يدعم التخزين المحلي الاحتياطي والتبديل المرن للمفاتيح
  */
 
 // إعدادات Firebase الافتراضية
-// يمكن للمستخدم تحديث هذه الإعدادات مباشرة من نافذة "الإعدادات" في الموقع وحفظها في localStorage
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyDummyKey_ReplaceWithYourActualFirebaseApiKey",
   authDomain: "business-manager-f.firebaseapp.com",
+  databaseURL: "https://business-manager-f-default-rtdb.firebaseio.com",
   projectId: "business-manager-f",
   storageBucket: "business-manager-f.appspot.com",
   messagingSenderId: "1234567890",
@@ -32,7 +32,7 @@ function getFirebaseConfig() {
 
 let firebaseApp = null;
 let firebaseAuth = null;
-let firestoreDb = null;
+let realtimeDb = null;
 let firebaseStorage = null;
 let isFirebaseInitialized = false;
 
@@ -46,30 +46,22 @@ function initFirebase() {
         firebaseApp = firebase.app();
       }
       firebaseAuth = firebase.auth();
-      firestoreDb = firebase.firestore();
-      
-      // إتاحة العمل مع التخزين المؤقت المحلي لـ Firestore عند توفر مشروع حقيقي
-      const isConfigValid = config.apiKey && !config.apiKey.includes('DummyKey');
-      if (isConfigValid && window.location.protocol.startsWith('http')) {
-        try {
-          firestoreDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            // Silently catch persistence errors
-          });
-        } catch (persErr) {
-          // ignore persistence errors
-        }
+
+      // تهيئة Realtime Database
+      if (firebase.database) {
+        realtimeDb = firebase.database();
       }
 
       if (firebase.storage) {
         firebaseStorage = firebase.storage();
       }
       isFirebaseInitialized = true;
-      console.log('Firebase initialized successfully with project:', config.projectId);
+      console.log('Firebase Realtime Database initialized successfully with project:', config.projectId);
     } else {
       console.warn('Firebase SDK not loaded yet.');
     }
   } catch (error) {
-    console.error('Error initializing Firebase:', error);
+    console.error('Error initializing Firebase Realtime Database:', error);
     isFirebaseInitialized = false;
   }
 }
@@ -80,7 +72,7 @@ initFirebase();
 window.FirebaseApp = {
   getApp: () => firebaseApp,
   getAuth: () => firebaseAuth,
-  getDb: () => firestoreDb,
+  getDb: () => realtimeDb,
   getStorage: () => firebaseStorage,
   isInitialized: () => isFirebaseInitialized,
   getConfig: getFirebaseConfig,

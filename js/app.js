@@ -32,6 +32,12 @@ const App = {
       const userEmailEl = document.getElementById('current-user-email');
       if (userEmailEl) userEmailEl.textContent = user.email || 'صاحبة البزنس';
 
+      // تفعيل المزامنة اللحظية مع Realtime Database
+      Database.initRealtimeSync((collectionChanged) => {
+        console.log(`Realtime update received for: ${collectionChanged}`);
+        this.refreshCurrentView();
+      });
+
       this.refreshCurrentView();
     } else {
       if (authWrapper) authWrapper.style.display = 'flex';
@@ -190,14 +196,14 @@ const App = {
         e.preventDefault();
         const cfg = {
           apiKey: document.getElementById('cfg-api-key').value.trim(),
+          databaseURL: document.getElementById('cfg-database-url').value.trim(),
           authDomain: document.getElementById('cfg-auth-domain').value.trim(),
           projectId: document.getElementById('cfg-project-id').value.trim(),
           storageBucket: document.getElementById('cfg-storage-bucket').value.trim(),
-          messagingSenderId: document.getElementById('cfg-sender-id').value.trim(),
           appId: document.getElementById('cfg-app-id').value.trim()
         };
         FirebaseApp.saveConfig(cfg);
-        alert('تم حفظ إعدادات Firebase بنجاح وإعادة تشغيل التطبيق.');
+        alert('تم حفظ إعدادات Firebase Realtime Database بنجاح وإعادة تشغيل التطبيق.');
       });
     }
 
@@ -317,10 +323,10 @@ const App = {
     const cfg = FirebaseApp.getConfig();
     if (document.getElementById('cfg-api-key')) {
       document.getElementById('cfg-api-key').value = cfg.apiKey || '';
+      document.getElementById('cfg-database-url').value = cfg.databaseURL || '';
       document.getElementById('cfg-auth-domain').value = cfg.authDomain || '';
       document.getElementById('cfg-project-id').value = cfg.projectId || '';
       document.getElementById('cfg-storage-bucket').value = cfg.storageBucket || '';
-      document.getElementById('cfg-sender-id').value = cfg.messagingSenderId || '';
       document.getElementById('cfg-app-id').value = cfg.appId || '';
     }
   },
