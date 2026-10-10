@@ -112,16 +112,16 @@ Nairouz/
 3. أضيفي مستخدماً جديداً (بريدك وكلمة مرورك الخاصة).
 4. من القائمة الجانبية، اضغطي على **Build** ثم **Realtime Database**، واضغطي **Create Database**.
 5. اختاري موقع الخادم (مثلاً `United States` أو `Belgium`)، واختاري وضع الأمان **Locked mode** ثم اضغطي **Enable**.
-6. في تبويب **Rules** بقاعدة بيانات **Realtime Database**، ضعي قواعد الأمان لحماية بياناتك:
+6. في تبويب **Rules** بقاعدة بيانات **Realtime Database**، ضعي قواعد الأمان المحكمة لحصر الوصول لبريدك الشخصي فقط ومنع أي شخص آخر من قراءة أو تعديل أو سرقة البيانات:
    ```json
    {
      "rules": {
-       ".read": "auth != null",
-       ".write": "auth != null"
+       ".read": "auth != null && auth.token.email === 'بريدك_المسجل@example.com'",
+       ".write": "auth != null && auth.token.email === 'بريدك_المسجل@example.com'"
      }
    }
    ```
-   ثم اضغطي **Publish**.
+   *(استبدلي `بريدك_المسجل@example.com` بنفس البريد الإلكتروني الذي سجلتِ به في Firebase Authentication)*، ثم اضغطي **Publish**.
 7. اذهبي إلى **Project Settings** (إعدادات المشروع ⚙️) وأضيفي تطبيق ويب للحصول على `firebaseConfig` (يتضمن `databaseURL` و `apiKey` و `projectId`).
 8. افتحي موقعك، ثم توجهي إلى قسم **الإعدادات و Firebase** وألصقي المفاتيح هناك واضغطي **حفظ وتفعيل Firebase**، وستعمل قاعدة البيانات السحابية الحية لحظياً!
 

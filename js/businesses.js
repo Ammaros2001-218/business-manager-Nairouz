@@ -641,9 +641,19 @@ const Businesses = {
         adSpent: 0
       };
 
-      await Database.saveBusiness(businessData, existingId || null);
+      const saveRes = await Database.saveBusiness(businessData, existingId || null);
 
-      App.showToast(existingId ? 'تم تحديث بيانات البزنس بنجاح!' : 'تم حفظ البزنس الجديد بنجاح!', 'success');
+      if (saveRes && saveRes.savedToCloud) {
+        App.showToast(existingId ? 'تم تحديث بيانات البزنس ومزامنته سحابياً بنجاح! ☁️' : 'تم حفظ البزنس في قاعدة البيانات السحابية بنجاح! ☁️', 'success');
+      } else {
+        const reason = (saveRes && saveRes.cloudError) ? ` (${saveRes.cloudError})` : '';
+        App.showToast(`⚠️ تم الحفظ محلياً في هذا المتصفح فقط! لم يتم الرفع للسحابة${reason}`, 'warning');
+      }
+      
+      if (typeof App.updateCloudSyncBadge === 'function') {
+        App.updateCloudSyncBadge();
+      }
+
       App.navigateTo('active-businesses');
     } catch (err) {
       console.error(err);

@@ -38,10 +38,30 @@ const App = {
         this.refreshCurrentView();
       });
 
+      this.updateCloudSyncBadge();
       this.refreshCurrentView();
     } else {
       if (authWrapper) authWrapper.style.display = 'flex';
       if (appWrapper) appWrapper.style.display = 'none';
+      this.updateCloudSyncBadge();
+    }
+  },
+
+  async updateCloudSyncBadge() {
+    const badge = document.getElementById('cloud-sync-status-badge');
+    if (!badge) return;
+
+    const status = await Database.checkCloudStatus();
+    if (status.online) {
+      badge.className = 'badge rounded-pill bg-success-soft text-success border border-success-subtle px-3 py-2 d-flex align-items-center gap-1';
+      badge.innerHTML = '<i class="bi bi-cloud-check-fill text-success"></i><small class="fw-bold">سحابي متصل (Firebase)</small>';
+      badge.title = 'قاعدة البيانات متصلة ومزامنة سحابياً بنجاح ✨';
+    } else {
+      const isPerm = status.permissionDenied;
+      const title = status.reason || 'البيانات تحفظ محلياً على هذا الجهاز';
+      badge.className = 'badge rounded-pill bg-warning-soft text-warning border border-warning-subtle px-3 py-2 d-flex align-items-center gap-1';
+      badge.innerHTML = `<i class="bi bi-hdd-fill text-warning"></i><small class="fw-bold">${isPerm ? 'إذن مرفوض (Rules)' : 'تخزين محلي فقط'}</small>`;
+      badge.title = title;
     }
   },
 
@@ -246,6 +266,28 @@ const App = {
         };
         FirebaseApp.saveConfig(cfg);
         alert('تم حفظ إعدادات Firebase Realtime Database بنجاح وإعادة تشغيل التطبيق.');
+      });
+    }
+
+    // زر مزامنة البيانات المحلية إلى سحابة Firebase
+    const syncLocalBtn = document.getElementById('btn-sync-local-data');
+    if (syncLocalBtn) {
+      syncLocalBtn.addEventListener('click', async () => {
+        syncLocalBtn.disabled = true;
+        syncLocalBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جارِ المزامنة والرفع...';
+
+        const res = await Database.syncLocalDataToCloud();
+        syncLocalBtn.disabled = false;
+        syncLocalBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> مزامنة البيانات المحلية إلى سحابة Firebase';
+
+        if (res.success) {
+          const totalSynced = res.counts.businesses + res.counts.sales + res.counts.expenses;
+          App.showToast(`تمت المزامنة بنجاح! تم رفع ${res.counts.businesses} بزنس، ${res.counts.sales} عملية بيع، ${res.counts.expenses} مصروف إلى السحابة بنجاح ☁️`, 'success');
+          App.updateCloudSyncBadge();
+          App.refreshCurrentView();
+        } else {
+          App.showToast(`فشلت المزامنة: ${res.error}`, 'error');
+        }
       });
     }
 

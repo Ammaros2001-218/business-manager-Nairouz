@@ -16,6 +16,7 @@ const Database = {
   },
 
   _realtimeListenersAttached: false,
+  _lastCloudState: null,
 
   // التحقق إن كانت إعدادات Firebase مهيأة وصالحة للاتصال بـ Realtime Database
   canUseRTDB() {
@@ -24,6 +25,95 @@ const Database = {
     const auth = FirebaseApp.getAuth();
     const db = FirebaseApp.getDb();
     return FirebaseApp.isInitialized() && !isDummy && db && auth && auth.currentUser;
+  },
+
+  /**
+   * فحص حالة الاتصال الحقيقي بسحابة Firebase والأذونات
+   */
+  async checkCloudStatus() {
+    if (!this.canUseRTDB()) {
+      this._lastCloudState = { online: false, reason: 'غير مسجل الدخول في Firebase أو التهيئة غير مكتملة' };
+      return this._lastCloudState;
+    }
+    try {
+      const db = FirebaseApp.getDb();
+      // محاولة قراءة خفيفة للتحقق من صلاحية القواعد (Rules) والاتصال
+      await db.ref(this.PATHS.BUSINESSES).limitToFirst(1).get();
+      this._lastCloudState = { online: true };
+      return this._lastCloudState;
+    } catch (err) {
+      console.warn('Firebase RTDB permission/connection check failed:', err);
+      const isPermission = err.message && (err.message.includes('Permission denied') || err.message.includes('permission_denied'));
+      this._lastCloudState = {
+        online: false,
+        permissionDenied: isPermission,
+        reason: isPermission 
+          ? 'تم رفض الإذن (Permission Denied). يرجى مراجعة قواعد الأمان Rules في Firebase.'
+          : (err.message || 'فشل الاتصال بقاعدة البيانات')
+      };
+      return this._lastCloudState;
+    }
+  },
+
+  /**
+   * مزامنة ونقل كافة البيانات المخزنة محلياً على هذا الجهاز إلى سحابة Firebase
+   */
+  async syncLocalDataToCloud() {
+    if (!this.canUseRTDB()) {
+      return {
+        success: false,
+        error: 'يجب تسجيل الدخول بحساب Firebase المصرح له أولاً لإتمام المزامنة السحابية.'
+      };
+    }
+
+    try {
+      const db = FirebaseApp.getDb();
+      let syncedBizCount = 0;
+      let syncedSalesCount = 0;
+      let syncedExpCount = 0;
+
+      // 1. مزامنة البزنسات
+      const localBiz = JSON.parse(localStorage.getItem('bm_local_businesses') || '[]');
+      for (const biz of localBiz) {
+        const id = (biz.id && !biz.id.startsWith('biz_')) ? biz.id : db.ref(this.PATHS.BUSINESSES).push().key;
+        const toSave = { ...biz, id };
+        await db.ref(`${this.PATHS.BUSINESSES}/${id}`).set(toSave);
+        syncedBizCount++;
+      }
+
+      // 2. مزامنة المبيعات
+      const localSales = JSON.parse(localStorage.getItem('bm_local_sales') || '[]');
+      for (const sale of localSales) {
+        const id = (sale.id && !sale.id.startsWith('sale_')) ? sale.id : db.ref(this.PATHS.SALES).push().key;
+        const toSave = { ...sale, id };
+        await db.ref(`${this.PATHS.SALES}/${id}`).set(toSave);
+        syncedSalesCount++;
+      }
+
+      // 3. مزامنة المصروفات
+      const localExp = JSON.parse(localStorage.getItem('bm_local_expenses') || '[]');
+      for (const exp of localExp) {
+        const id = (exp.id && !exp.id.startsWith('exp_')) ? exp.id : db.ref(this.PATHS.EXPENSES).push().key;
+        const toSave = { ...exp, id };
+        await db.ref(`${this.PATHS.EXPENSES}/${id}`).set(toSave);
+        syncedExpCount++;
+      }
+
+      return {
+        success: true,
+        counts: {
+          businesses: syncedBizCount,
+          sales: syncedSalesCount,
+          expenses: syncedExpCount
+        }
+      };
+    } catch (err) {
+      console.error('Sync to cloud error:', err);
+      return {
+        success: false,
+        error: err.message || 'حدث خطأ أثناء رفع البيانات إلى Firebase'
+      };
+    }
   },
 
   /**
@@ -119,24 +209,34 @@ const Database = {
       updatedAt: now
     };
 
+    let savedToCloud = false;
+    let cloudError = null;
+
     if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
         if (existingId) {
           const bizRef = db.ref(`${this.PATHS.BUSINESSES}/${existingId}`);
           await bizRef.update(item);
-          return { id: existingId, ...item };
+          savedToCloud = true;
+          this._updateLocalBusinessCache({ id: existingId, ...item });
+          return { id: existingId, ...item, savedToCloud: true };
         } else {
           item.createdAt = now;
           item.status = item.status || 'active';
           const newRef = db.ref(this.PATHS.BUSINESSES).push();
           const newId = newRef.key;
           await newRef.set(item);
-          return { id: newId, ...item };
+          savedToCloud = true;
+          this._updateLocalBusinessCache({ id: newId, ...item });
+          return { id: newId, ...item, savedToCloud: true };
         }
       } catch (err) {
         console.warn('RTDB saveBusiness failed, falling back to local storage:', err);
+        cloudError = err.message || 'فشل الاتصال بـ Firebase أو تم رفض الإذن';
       }
+    } else {
+      cloudError = 'المستخدم غير مسجل الدخول في Firebase';
     }
 
     // Local Storage Mode
@@ -160,7 +260,23 @@ const Database = {
       list.unshift(savedItem);
     }
     localStorage.setItem('bm_local_businesses', JSON.stringify(list));
-    return savedItem;
+    return { ...savedItem, savedToCloud: false, cloudError };
+  },
+
+  _updateLocalBusinessCache(item) {
+    try {
+      const local = localStorage.getItem('bm_local_businesses');
+      const list = local ? JSON.parse(local) : [];
+      const idx = list.findIndex(b => b.id === item.id);
+      if (idx !== -1) {
+        list[idx] = item;
+      } else {
+        list.unshift(item);
+      }
+      localStorage.setItem('bm_local_businesses', JSON.stringify(list));
+    } catch (e) {
+      console.warn('Failed to update local cache', e);
+    }
   },
 
   async updateBusinessStatus(id, newStatus, closeNotes = '') {
