@@ -113,7 +113,7 @@ const Archive = {
                     <button class="btn btn-pink-subtle text-pink flex-grow-1 rounded-pill btn-sm py-2" onclick="Businesses.reopenBusiness('${biz.id}')">
                       <i class="bi bi-arrow-counterclockwise me-1"></i> إعادة فتح
                     </button>
-                    <button class="btn btn-outline-danger rounded-pill btn-sm px-3 py-2" onclick="Businesses.openDeleteModal('${biz.id}')" title="حذف البزنس نهائياً">
+                    <button class="btn btn-outline-danger rounded-pill btn-sm px-3 py-2" onclick="event.stopPropagation(); Businesses.openDeleteModal('${biz.id}')" title="حذف البزنس نهائياً">
                       <i class="bi bi-trash3 me-1"></i> حذف
                     </button>
                   </div>
