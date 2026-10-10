@@ -313,6 +313,9 @@ const Database = {
   },
 
   async deleteBusiness(id) {
+    let deletedFromCloud = false;
+    let cloudError = null;
+
     if (this.canUseRTDB()) {
       try {
         const db = FirebaseApp.getDb();
@@ -336,8 +339,10 @@ const Database = {
             await db.ref(`${this.PATHS.EXPENSES}/${eId}`).remove();
           }
         }
+        deletedFromCloud = true;
       } catch (e) {
         console.warn('RTDB deleteBusiness error:', e);
+        cloudError = e.message;
       }
     }
 
@@ -352,7 +357,7 @@ const Database = {
     const expenses = await this.getAllExpenses();
     const filteredExpenses = expenses.filter(e => e.businessId !== id);
     localStorage.setItem('bm_local_expenses', JSON.stringify(filteredExpenses));
-    return true;
+    return { success: true, deletedFromCloud, cloudError };
   },
 
   // =========================================================================

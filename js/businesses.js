@@ -104,6 +104,9 @@ const Businesses = {
                   <button class="btn btn-pink rounded-pill btn-sm px-3" onclick="Sales.openAddSaleModal('${biz.id}')" title="تسجيل بيع">
                     <i class="bi bi-cart-plus"></i>
                   </button>
+                  <button class="btn btn-outline-danger rounded-circle btn-sm p-2" onclick="Businesses.openDeleteModal('${biz.id}')" title="حذف البزنس نهائياً">
+                    <i class="bi bi-trash3"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -245,6 +248,15 @@ const Businesses = {
       if (modal) modal.hide();
       Businesses.openEditForm(businessId);
     };
+
+    const deleteBtn = document.getElementById('biz-action-delete-btn');
+    if (deleteBtn) {
+      deleteBtn.onclick = () => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('businessDetailsModal'));
+        if (modal) modal.hide();
+        Businesses.openDeleteModal(businessId);
+      };
+    }
 
     const detailsModal = new bootstrap.Modal(document.getElementById('businessDetailsModal'));
     detailsModal.show();
@@ -707,6 +719,57 @@ const Businesses = {
       App.showToast('تمت إعادة فتح البزنس بنجاح!', 'success');
       App.navigateTo('active-businesses');
     }
+  },
+
+  /**
+   * فتح نافذة تأكيد حذف البزنس نهائياً مع إحصائيات عملياته
+   */
+  async openDeleteModal(businessId) {
+    const biz = await Database.getBusinessById(businessId);
+    if (!biz) return;
+
+    const sales = await Database.getAllSales(businessId);
+    const expenses = await Database.getAllExpenses(businessId);
+
+    const nameEl = document.getElementById('delete-modal-biz-name');
+    const salesEl = document.getElementById('delete-modal-sales-count');
+    const expEl = document.getElementById('delete-modal-expenses-count');
+    const confirmBtn = document.getElementById('confirm-delete-biz-btn');
+
+    if (nameEl) nameEl.textContent = `${biz.name} (${biz.productName || 'بدون اسم منتج'})`;
+    if (salesEl) salesEl.textContent = `${sales.length} عملية بيع`;
+    if (expEl) expEl.textContent = `${expenses.length} مصروف`;
+
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="bi bi-trash3 me-1"></i> حذف البزنس نهائياً';
+
+      confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جارِ الحذف...';
+
+        try {
+          const res = await Database.deleteBusiness(businessId);
+          
+          const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteBusinessModal'));
+          if (deleteModal) deleteModal.hide();
+
+          const detailsModal = bootstrap.Modal.getInstance(document.getElementById('businessDetailsModal'));
+          if (detailsModal) detailsModal.hide();
+
+          App.showToast(`تم حذف البزنس "${biz.name}" وجميع عملياته بنجاح.`, 'success');
+          App.refreshCurrentView();
+        } catch (err) {
+          console.error('Delete business error:', err);
+          App.showToast('حدث خطأ أثناء محاولة حذف البزنس.', 'error');
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = '<i class="bi bi-trash3 me-1"></i> حذف البزنس نهائياً';
+        }
+      };
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('deleteBusinessModal'));
+    modal.show();
   }
 };
 
