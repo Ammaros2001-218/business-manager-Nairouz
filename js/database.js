@@ -202,12 +202,33 @@ const Database = {
     return all.find(b => b.id === id) || null;
   },
 
+  _cleanForFirebase(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) {
+      return obj.map(item => this._cleanForFirebase(item));
+    }
+    const clean = {};
+    for (const [key, val] of Object.entries(obj)) {
+      if (val === undefined) {
+        clean[key] = '';
+      } else if (val !== null && typeof val === 'object') {
+        clean[key] = this._cleanForFirebase(val);
+      } else {
+        clean[key] = val;
+      }
+    }
+    return clean;
+  },
+
   async saveBusiness(businessData, existingId = null) {
     const now = new Date().toISOString();
-    const item = {
+    const item = this._cleanForFirebase({
       ...businessData,
+      productImage: (businessData.productImage && typeof businessData.productImage === 'string')
+        ? businessData.productImage.trim()
+        : '',
       updatedAt: now
-    };
+    });
 
     let savedToCloud = false;
     let cloudError = null;

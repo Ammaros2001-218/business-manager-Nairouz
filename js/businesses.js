@@ -5,7 +5,23 @@
 
 const Businesses = {
   currentViewingBusinessId: null,
-  existingImageUrl: null,
+  existingImageUrl: '',
+
+  /**
+   * ضبط وتنسيق رابط الصورة
+   */
+  normalizeImageUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    url = url.trim();
+    if (!url) return '';
+    if (url.startsWith('//')) {
+      return 'https:' + url;
+    }
+    if (!/^https?:\/\//i.test(url) && !url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith('assets/')) {
+      return 'https://' + url;
+    }
+    return url;
+  },
 
   /**
    * عرض معاينة صورة المنتج
@@ -39,7 +55,7 @@ const Businesses = {
     const urlInp = document.getElementById('biz-image-url');
     if (fileInp) fileInp.value = '';
     if (urlInp) urlInp.value = '';
-    this.existingImageUrl = null;
+    this.existingImageUrl = '';
     this.hideImagePreview();
   },
 
@@ -316,7 +332,7 @@ const Businesses = {
     const imageFileInp = document.getElementById('biz-image-file');
     if (imageUrlInp) imageUrlInp.value = '';
     if (imageFileInp) imageFileInp.value = '';
-    this.existingImageUrl = null;
+    this.existingImageUrl = '';
     this.hideImagePreview();
 
     if (businessId) {
@@ -333,7 +349,7 @@ const Businesses = {
         // صورة المنتج الحالية إن وجدت
         if (biz.productImage) {
           this.existingImageUrl = biz.productImage;
-          if (imageUrlInp && (biz.productImage.startsWith('http://') || biz.productImage.startsWith('https://'))) {
+          if (imageUrlInp) {
             imageUrlInp.value = biz.productImage;
           }
           this.showImagePreview(biz.productImage, 'الصورة الحالية للبزنس');
@@ -652,19 +668,28 @@ const Businesses = {
       // معالجة صورة المنتج إن وجدت (عبر الرفع من الجهاز أو الرابط المباشر)
       const imageFileInput = document.getElementById('biz-image-file');
       const imageUrlInput = document.getElementById('biz-image-url');
-      const enteredUrl = imageUrlInput ? imageUrlInput.value.trim() : '';
-      let imageUrl = null;
+      let enteredUrl = imageUrlInput ? imageUrlInput.value.trim() : '';
+      if (enteredUrl) {
+        enteredUrl = this.normalizeImageUrl(enteredUrl);
+      }
+      let imageUrl = '';
 
       if (imageFileInput && imageFileInput.files && imageFileInput.files[0]) {
-        imageUrl = await Database.uploadImage(imageFileInput.files[0]);
+        const uploaded = await Database.uploadImage(imageFileInput.files[0]);
+        imageUrl = uploaded || '';
       } else if (enteredUrl) {
         imageUrl = enteredUrl;
       } else if (this.existingImageUrl) {
         imageUrl = this.existingImageUrl;
-      } else if (existingId && this.existingImageUrl === undefined) {
+      } else if (existingId) {
         const old = await Database.getBusinessById(existingId);
-        if (old) imageUrl = old.productImage;
+        if (old && old.productImage) {
+          imageUrl = old.productImage;
+        }
       }
+
+      // التأكد التام من أن imageUrl نصي وليس undefined أو null لتجنب أي خطأ في Firebase
+      imageUrl = (typeof imageUrl === 'string') ? imageUrl.trim() : '';
 
       const additionalCostsList = this.getAdditionalCostsList();
       const totalAdditionalCost = parseFloat(document.getElementById('biz-additional-cost').value) || 0;

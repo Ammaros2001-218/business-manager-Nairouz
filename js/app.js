@@ -223,7 +223,7 @@ const App = {
             Businesses.showImagePreview(ev.target.result, `ملف محلي: ${file.name}`);
             const urlInp = document.getElementById('biz-image-url');
             if (urlInp) urlInp.value = '';
-            Businesses.existingImageUrl = null;
+            Businesses.existingImageUrl = '';
           };
           reader.readAsDataURL(file);
         } else {
@@ -244,10 +244,11 @@ const App = {
       const handleUrlChange = () => {
         const val = bizImageUrl.value.trim();
         if (val) {
-          Businesses.showImagePreview(val, 'صورة من الرابط المباشر');
+          const previewUrl = Businesses.normalizeImageUrl ? Businesses.normalizeImageUrl(val) : val;
+          Businesses.showImagePreview(previewUrl, 'صورة من الرابط المباشر');
           const fileInp = document.getElementById('biz-image-file');
           if (fileInp) fileInp.value = '';
-          Businesses.existingImageUrl = null;
+          Businesses.existingImageUrl = '';
         } else {
           const fileInp = document.getElementById('biz-image-file');
           if (!fileInp || !fileInp.files || !fileInp.files[0]) {
