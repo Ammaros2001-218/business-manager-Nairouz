@@ -212,6 +212,64 @@ const App = {
       enableAds.addEventListener('change', () => Businesses.toggleAdsFields());
     }
 
+    // أحداث صورة المنتج (رفع من الجهاز أو إدخال رابط أو إزالة الصورة)
+    const bizImageFile = document.getElementById('biz-image-file');
+    if (bizImageFile) {
+      bizImageFile.addEventListener('change', () => {
+        if (bizImageFile.files && bizImageFile.files[0]) {
+          const file = bizImageFile.files[0];
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            Businesses.showImagePreview(ev.target.result, `ملف محلي: ${file.name}`);
+            const urlInp = document.getElementById('biz-image-url');
+            if (urlInp) urlInp.value = '';
+            Businesses.existingImageUrl = null;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          const urlInp = document.getElementById('biz-image-url');
+          if (!urlInp || !urlInp.value.trim()) {
+            if (Businesses.existingImageUrl) {
+              Businesses.showImagePreview(Businesses.existingImageUrl, 'الصورة الحالية للبزنس');
+            } else {
+              Businesses.hideImagePreview();
+            }
+          }
+        }
+      });
+    }
+
+    const bizImageUrl = document.getElementById('biz-image-url');
+    if (bizImageUrl) {
+      const handleUrlChange = () => {
+        const val = bizImageUrl.value.trim();
+        if (val) {
+          Businesses.showImagePreview(val, 'صورة من الرابط المباشر');
+          const fileInp = document.getElementById('biz-image-file');
+          if (fileInp) fileInp.value = '';
+          Businesses.existingImageUrl = null;
+        } else {
+          const fileInp = document.getElementById('biz-image-file');
+          if (!fileInp || !fileInp.files || !fileInp.files[0]) {
+            if (Businesses.existingImageUrl) {
+              Businesses.showImagePreview(Businesses.existingImageUrl, 'الصورة الحالية للبزنس');
+            } else {
+              Businesses.hideImagePreview();
+            }
+          }
+        }
+      };
+      bizImageUrl.addEventListener('input', handleUrlChange);
+      bizImageUrl.addEventListener('change', handleUrlChange);
+    }
+
+    const clearImageBtn = document.getElementById('biz-clear-image-btn');
+    if (clearImageBtn) {
+      clearImageBtn.addEventListener('click', () => {
+        Businesses.clearImage();
+      });
+    }
+
     // أحداث نموذج البيع الحي
     const saleBizSelect = document.getElementById('sale-business-select');
     if (saleBizSelect) saleBizSelect.addEventListener('change', () => Sales.onBusinessOrQuantityChange());

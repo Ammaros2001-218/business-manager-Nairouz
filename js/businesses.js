@@ -5,6 +5,43 @@
 
 const Businesses = {
   currentViewingBusinessId: null,
+  existingImageUrl: null,
+
+  /**
+   * عرض معاينة صورة المنتج
+   */
+  showImagePreview(src, labelText = 'معاينة صورة المنتج المحددة') {
+    const wrapper = document.getElementById('biz-image-preview-wrapper');
+    const img = document.getElementById('biz-image-preview');
+    const label = document.getElementById('biz-image-preview-label');
+    if (wrapper && img && src) {
+      img.src = src;
+      if (label && labelText) label.textContent = labelText;
+      wrapper.style.display = 'block';
+    }
+  },
+
+  /**
+   * إخفاء معاينة صورة المنتج
+   */
+  hideImagePreview() {
+    const wrapper = document.getElementById('biz-image-preview-wrapper');
+    const img = document.getElementById('biz-image-preview');
+    if (img) img.src = '';
+    if (wrapper) wrapper.style.display = 'none';
+  },
+
+  /**
+   * تفريغ وإزالة الصورة تماماً
+   */
+  clearImage() {
+    const fileInp = document.getElementById('biz-image-file');
+    const urlInp = document.getElementById('biz-image-url');
+    if (fileInp) fileInp.value = '';
+    if (urlInp) urlInp.value = '';
+    this.existingImageUrl = null;
+    this.hideImagePreview();
+  },
 
   async renderActiveList() {
     const container = document.getElementById('businesses-list-container');
@@ -274,6 +311,14 @@ const Businesses = {
     const extraContainer = document.getElementById('biz-additional-costs-container');
     if (extraContainer) extraContainer.innerHTML = '';
 
+    // تفريغ صورة المنتج ومعاينتها
+    const imageUrlInp = document.getElementById('biz-image-url');
+    const imageFileInp = document.getElementById('biz-image-file');
+    if (imageUrlInp) imageUrlInp.value = '';
+    if (imageFileInp) imageFileInp.value = '';
+    this.existingImageUrl = null;
+    this.hideImagePreview();
+
     if (businessId) {
       document.getElementById('business-form-title').textContent = 'تعديل بيانات البزنس';
       const biz = await Database.getBusinessById(businessId);
@@ -284,6 +329,15 @@ const Businesses = {
         document.getElementById('biz-purchase-date').value = biz.purchaseDate || '';
         document.getElementById('biz-total-units').value = biz.totalUnits || '';
         document.getElementById('biz-description').value = biz.description || '';
+
+        // صورة المنتج الحالية إن وجدت
+        if (biz.productImage) {
+          this.existingImageUrl = biz.productImage;
+          if (imageUrlInp && (biz.productImage.startsWith('http://') || biz.productImage.startsWith('https://'))) {
+            imageUrlInp.value = biz.productImage;
+          }
+          this.showImagePreview(biz.productImage, 'الصورة الحالية للبزنس');
+        }
 
         // 1. تكلفة الشراء
         document.getElementById('biz-currency').value = biz.currency || 'LYD';
@@ -595,12 +649,19 @@ const Businesses = {
       const existingId = document.getElementById('form-edit-business-id').value;
       const { costBreakdown, unitCost } = this.updateLiveCostSummary();
 
-      // معالجة صورة المنتج إن وجدت
+      // معالجة صورة المنتج إن وجدت (عبر الرفع من الجهاز أو الرابط المباشر)
       const imageFileInput = document.getElementById('biz-image-file');
+      const imageUrlInput = document.getElementById('biz-image-url');
+      const enteredUrl = imageUrlInput ? imageUrlInput.value.trim() : '';
       let imageUrl = null;
+
       if (imageFileInput && imageFileInput.files && imageFileInput.files[0]) {
         imageUrl = await Database.uploadImage(imageFileInput.files[0]);
-      } else if (existingId) {
+      } else if (enteredUrl) {
+        imageUrl = enteredUrl;
+      } else if (this.existingImageUrl) {
+        imageUrl = this.existingImageUrl;
+      } else if (existingId && this.existingImageUrl === undefined) {
         const old = await Database.getBusinessById(existingId);
         if (old) imageUrl = old.productImage;
       }

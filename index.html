@@ -419,11 +419,31 @@
                     <input type="number" id="biz-total-units" min="1" class="form-control rounded-3" placeholder="مثال: 100" required>
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label fw-bold text-sm">صورة المنتج (اختياري)</label>
+                    <label class="form-label fw-bold text-sm"><i class="bi bi-upload text-pink me-1"></i> صورة المنتج (رفع من الجهاز)</label>
                     <input type="file" id="biz-image-file" class="form-control rounded-3" accept="image/*">
                     <small class="text-muted">يمكنك رفع صورة من جهازك لحفظها مع بيانات البزنس</small>
                   </div>
                   <div class="col-md-6">
+                    <label class="form-label fw-bold text-sm"><i class="bi bi-link-45deg text-pink me-1"></i> أو إضافة الصورة عن طريق الرابط</label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-link-45deg"></i></span>
+                      <input type="url" id="biz-image-url" class="form-control border-start-0 rounded-start-3" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <small class="text-muted">أو ضعي رابط صورة جاهز مباشرة من الإنترنت</small>
+                  </div>
+                  <div class="col-12" id="biz-image-preview-wrapper" style="display: none;">
+                    <div class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border">
+                      <img id="biz-image-preview" src="" alt="معاينة صورة المنتج" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&auto=format&fit=crop&q=60';" style="width: 55px; height: 55px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;">
+                      <div class="flex-grow-1">
+                        <small class="fw-bold d-block text-dark" id="biz-image-preview-label">معاينة صورة المنتج المحددة</small>
+                        <small class="text-muted" id="biz-image-preview-sub">جاهزة للحفظ مع البزنس</small>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1" id="biz-clear-image-btn" title="إزالة الصورة">
+                        <i class="bi bi-trash3 me-1"></i> إزالة الصورة
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-12">
                     <label class="form-label fw-bold text-sm">وصف البزنس والمنتج</label>
                     <input type="text" id="biz-description" class="form-control rounded-3" placeholder="وصف اختياري للمواصفات أو المورد">
                   </div>
